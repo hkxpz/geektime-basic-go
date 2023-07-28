@@ -1,4 +1,4 @@
-package slice
+package internal
 
 import (
 	"errors"

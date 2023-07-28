@@ -1,11 +1,21 @@
 package slice
 
+import "geektime-basic-go/week01/homework/slice/internal"
+
 func Delete[T any](src []T, index int) ([]T, error) {
-	length := len(src)
-	if index < 0 || index >= length {
-		return nil, NewErrIndexOutOfRange(length, index)
+	res, _, err := internal.Delete(src, index)
+	return res, err
+}
+
+func DeleteWithReduceCapacity[T any](src []T, index int) ([]T, error) {
+	res, _, err := internal.Delete(src, index)
+	if err != nil {
+		return src, err
 	}
 
-	copy(src[index:], src[index+1:])
-	return src[:length-1], nil
+	length, capacity := len(src), cap(src)
+	if capacity >= 10 && length <= capacity/4 {
+		return src[: length : capacity/2], nil
+	}
+	return res, nil
 }
