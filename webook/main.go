@@ -6,18 +6,16 @@ import (
 	"time"
 
 	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/memstore"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
-	"geektime-basic-go/week02/webook/config"
-	"geektime-basic-go/week02/webook/internal/repository"
-	"geektime-basic-go/week02/webook/internal/repository/dao"
-	"geektime-basic-go/week02/webook/internal/service"
-	"geektime-basic-go/week02/webook/internal/web"
-	"geektime-basic-go/week02/webook/internal/web/middleware"
+	"geektime-basic-go/webook/config"
+	"geektime-basic-go/webook/internal/repository"
+	"geektime-basic-go/webook/internal/repository/dao"
+	"geektime-basic-go/webook/internal/service"
+	"geektime-basic-go/webook/internal/web"
+	"geektime-basic-go/webook/internal/web/middleware"
 )
 
 func main() {
@@ -56,22 +54,8 @@ func initWebServer() *gin.Engine {
 		MaxAge: 12 * time.Hour,
 	}))
 
-	usingJWT(server)
-	return server
-}
-
-func usingJWT(server *gin.Engine) {
 	server.Use(new(middleware.JWTLoginMiddlewareBuilder).Build())
-}
-
-func usingSession(server *gin.Engine) {
-	store := memstore.NewStore(
-		[]byte("moyn8y9abnd7q4zkq2m73yw8tu9j5ixm"),
-		[]byte("o6jdlo2cb9f9pb6h46fjmllw481ldebj"),
-	)
-
-	server.Use(sessions.Sessions("ssid", store))
-	server.Use(new(middleware.LoginMiddlewareBuilder).CheckLogin())
+	return server
 }
 
 func initUser(server *gin.Engine, db *gorm.DB) {

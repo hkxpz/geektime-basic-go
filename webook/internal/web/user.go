@@ -6,19 +6,16 @@ import (
 	"time"
 
 	regexp "github.com/dlclark/regexp2"
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 
-	"geektime-basic-go/week02/webook/internal/domain"
-	"geektime-basic-go/week02/webook/internal/service"
+	"geektime-basic-go/webook/internal/domain"
+	"geektime-basic-go/webook/internal/service"
 )
 
 const (
 	emailRegexPattern    = `^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$`
 	passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$`
-
-	userIdKey = "userId"
 )
 
 type UserHandler struct {
@@ -39,7 +36,7 @@ func (uh *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug := server.Group("/users")
 	ug.GET("/profile", uh.Profile)
 	ug.POST("/signup", uh.SignUp)
-	ug.POST("/login", uh.LoginJWT)
+	ug.POST("/login", uh.Login)
 	ug.POST("/edit", uh.Edit)
 }
 
@@ -93,7 +90,7 @@ func (uh *UserHandler) SignUp(ctx *gin.Context) {
 	ctx.String(http.StatusOK, "你好，注册成功")
 }
 
-func (uh *UserHandler) LoginJWT(ctx *gin.Context) {
+func (uh *UserHandler) Login(ctx *gin.Context) {
 	type LogReq struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -122,31 +119,6 @@ func (uh *UserHandler) LoginJWT(ctx *gin.Context) {
 		return
 	}
 	ctx.Header("x-jwt-token", tokenStr)
-	ctx.String(http.StatusOK, "登录成功")
-}
-
-func (uh *UserHandler) Login(ctx *gin.Context) {
-	type LogReq struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
-	var req LogReq
-	if err := ctx.Bind(&req); err != nil {
-		return
-	}
-	u, err := uh.svc.Login(ctx.Request.Context(), req.Email, req.Password)
-	if errors.Is(err, service.ErrInvalidUserOrPassword) {
-		ctx.String(http.StatusOK, "用户名或密码不正确，请重试")
-		return
-	}
-
-	sess := sessions.Default(ctx)
-	sess.Set(userIdKey, u.Id)
-	sess.Options(sessions.Options{MaxAge: 60})
-	if err = sess.Save(); err != nil {
-		ctx.String(http.StatusOK, "服务器异常")
-	}
 	ctx.String(http.StatusOK, "登录成功")
 }
 
