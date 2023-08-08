@@ -56,12 +56,9 @@ func initWebServer() *gin.Engine {
 		MaxAge: 12 * time.Hour,
 	}))
 
-	usingJWT(server)
-	return server
-}
-
-func usingJWT(server *gin.Engine) {
+	//usingSession(server)
 	server.Use(new(middleware.JWTLoginMiddlewareBuilder).Build())
+	return server
 }
 
 func usingSession(server *gin.Engine) {
@@ -71,7 +68,7 @@ func usingSession(server *gin.Engine) {
 	)
 
 	server.Use(sessions.Sessions("ssid", store))
-	server.Use(new(middleware.LoginMiddlewareBuilder).CheckLogin())
+	server.Use(new(middleware.LoginMiddlewareBuilder).IgnorePath("/users/login", "/users/signup").Build())
 }
 
 func initUser(server *gin.Engine, db *gorm.DB) {

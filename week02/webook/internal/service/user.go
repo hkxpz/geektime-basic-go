@@ -12,6 +12,10 @@ import (
 
 var (
 	ErrUserDuplicateEmail    = repository.ErrUserDuplicateEmail
+	ErrUserNotFound          = repository.ErrUserNotFound
+	ErrDataTooLong           = repository.ErrDataTooLong
+	ErrUserDuplicateNickname = repository.ErrUserDuplicateNickname
+
 	ErrInvalidUserOrPassword = errors.New("邮箱或者密码不正确")
 )
 
@@ -23,14 +27,14 @@ func NewUserService(repo *repository.UserRepository) *UserService {
 	return &UserService{repo: repo}
 }
 
-func (svc *UserService) Signup(ctx context.Context, u domain.User) error {
-	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+func (svc *UserService) Signup(ctx context.Context, user domain.User) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
-	u.Password = string(hash)
+	user.Password = string(hash)
 
-	return svc.repo.Create(ctx, u)
+	return svc.repo.Create(ctx, user)
 }
 
 func (svc *UserService) Login(ctx context.Context, email, password string) (domain.User, error) {
@@ -38,10 +42,21 @@ func (svc *UserService) Login(ctx context.Context, email, password string) (doma
 	if errors.Is(err, repository.ErrUserNotFound) {
 		return domain.User{}, ErrInvalidUserOrPassword
 	}
-	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 	if err != nil {
+		return domain.User{}, err
+	}
+
+	if err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
 		return domain.User{}, ErrInvalidUserOrPassword
 	}
 
 	return u, err
+}
+
+func (svc *UserService) Edit(ctx context.Context, user domain.User) error {
+	return svc.repo.Update(ctx, user)
+}
+
+func (svc *UserService) Profile(ctx context.Context, id int64) (domain.User, error) {
+	return svc.repo.FindByID(ctx, id)
 }

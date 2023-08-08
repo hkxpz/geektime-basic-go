@@ -3,7 +3,9 @@ package web
 import (
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
+	"unicode/utf8"
 
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
@@ -109,6 +111,11 @@ func (uh *UserHandler) LoginJWT(ctx *gin.Context) {
 		return
 	}
 
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, UserClaims{
 		Id:        u.Id,
 		UserAgent: ctx.GetHeader("User-Agent"),
@@ -140,6 +147,10 @@ func (uh *UserHandler) Login(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "用户名或密码不正确，请重试")
 		return
 	}
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
 
 	sess := sessions.Default(ctx)
 	sess.Set(userIdKey, u.Id)
@@ -151,9 +162,59 @@ func (uh *UserHandler) Login(ctx *gin.Context) {
 }
 
 func (uh *UserHandler) Edit(ctx *gin.Context) {
+	type EditReq struct {
+		Id           int64  `json:"id"`
+		Nickname     string `json:"nickname"`
+		Birthday     string `json:"birthday"`
+		Introduction string `json:"introduction"`
+	}
 
+	req := EditReq{}
+	if err := ctx.Bind(&req); err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
+
+	if utf8.RuneCountInString(req.Nickname) > 30 {
+		ctx.String(http.StatusOK, "昵称过长")
+		return
+	}
+	if _, err := time.Parse("2006-01-02", req.Birthday); err != nil {
+		ctx.String(http.StatusOK, "生日错误")
+		return
+	}
+	if utf8.RuneCountInString(req.Introduction) > 50 {
+		ctx.String(http.StatusOK, "个人简介过长")
+		return
+	}
+
+	err := uh.svc.Edit(ctx, domain.User{Id: req.Id, Nickname: req.Nickname, Birthday: req.Birthday, Introduction: req.Introduction})
+	if errors.Is(err, service.ErrUserDuplicateNickname) {
+		ctx.String(http.StatusOK, "重复昵称，请换一个昵称")
+		return
+	}
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
+	ctx.String(http.StatusOK, "更新成功")
 }
 
 func (uh *UserHandler) Profile(ctx *gin.Context) {
+	id, err := strconv.Atoi(ctx.Query("id"))
+	if err != nil {
+		ctx.String(http.StatusOK, "用户不存在")
+		return
+	}
 
+	user, err := uh.svc.Profile(ctx, int64(id))
+	if errors.Is(err, service.ErrUserNotFound) {
+		ctx.String(http.StatusOK, "用户不存在")
+		return
+	}
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
+	ctx.JSON(http.StatusOK, user)
 }

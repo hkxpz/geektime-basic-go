@@ -9,15 +9,24 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type LoginMiddlewareBuilder struct{}
+type LoginMiddlewareBuilder struct {
+	ignorePath []string
+}
 
-func (*LoginMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
+func (l *LoginMiddlewareBuilder) IgnorePath(path ...string) *LoginMiddlewareBuilder {
+	l.ignorePath = append(l.ignorePath, path...)
+	return l
+}
+
+func (l *LoginMiddlewareBuilder) Build() gin.HandlerFunc {
 	gob.Register(time.Time{})
 	return func(ctx *gin.Context) {
-		if ctx.Request.URL.Path == "/users/signup" ||
-			ctx.Request.URL.Path == "/users/login" {
-			return
+		for _, path := range l.ignorePath {
+			if ctx.Request.URL.Path == path {
+				return
+			}
 		}
+
 		sess := sessions.Default(ctx)
 		if sess.Get("userId") == nil {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
