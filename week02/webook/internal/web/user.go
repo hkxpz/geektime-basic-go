@@ -3,7 +3,6 @@ package web
 import (
 	"errors"
 	"net/http"
-	"strconv"
 	"time"
 	"unicode/utf8"
 
@@ -201,13 +200,8 @@ func (uh *UserHandler) Edit(ctx *gin.Context) {
 }
 
 func (uh *UserHandler) Profile(ctx *gin.Context) {
-	id, err := strconv.Atoi(ctx.Query("id"))
-	if err != nil {
-		ctx.String(http.StatusOK, "用户不存在")
-		return
-	}
-
-	user, err := uh.svc.Profile(ctx, int64(id))
+	userClaims := ctx.MustGet("user").(UserClaims)
+	user, err := uh.svc.Profile(ctx, userClaims.Id)
 	if errors.Is(err, service.ErrUserNotFound) {
 		ctx.String(http.StatusOK, "用户不存在")
 		return
