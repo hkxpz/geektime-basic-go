@@ -33,7 +33,7 @@ spec:
       containers:
         - name: webook
           image: hkxpz/webook:v0.0.1
-#          imagePullPolicy: IfNotPresent
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
+#          imagePullPolicy: Always
           ports:
             - containerPort: 8081

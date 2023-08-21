@@ -91,7 +91,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: 10Mi
 
 ---
 apiVersion: v1
@@ -101,7 +101,7 @@ metadata:
 spec:
   storageClassName: webook-mysql-initdb
   capacity:
-    storage: 1Gi
+    storage: 10Mi
   accessModes:
     - ReadWriteOnce
   nfs:
