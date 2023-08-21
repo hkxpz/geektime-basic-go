@@ -19,6 +19,7 @@ import (
 )
 
 func main() {
+	gin.SetMode(gin.ReleaseMode)
 	db := initDB()
 	server := initWebServer()
 	initUser(server, db)

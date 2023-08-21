@@ -39,7 +39,7 @@ spec:
             - name: MYSQL_ROOT_PASSWORD
               value: root
           volumeMounts:
-            - mountPath: /mysql
+            - mountPath: /var/lib/mysql
               name: mysql-storage
             - mountPath: /docker-entrypoint-initdb.d
               name: mysql-initdb
