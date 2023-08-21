@@ -7,7 +7,6 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 
@@ -17,7 +16,6 @@ import (
 	"geektime-basic-go/week03/webook/internal/service"
 	"geektime-basic-go/week03/webook/internal/web"
 	"geektime-basic-go/week03/webook/internal/web/middleware"
-	"geektime-basic-go/week03/webook/pkg/ginx/middleware/ratelimit"
 )
 
 func main() {
@@ -25,7 +23,7 @@ func main() {
 	server := initWebServer()
 	initUser(server, db)
 
-	log.Fatalln(server.Run(":8001"))
+	log.Fatalln(server.Run(":8081"))
 }
 
 func initDB() *gorm.DB {
@@ -59,8 +57,8 @@ func initWebServer() *gin.Engine {
 
 	server.Use(new(middleware.JWTLoginMiddlewareBuilder).Build())
 
-	redisStore := redis.NewClient(&redis.Options{Addr: config.Config.Redis.Addr, Password: config.Config.Redis.Password})
-	server.Use(ratelimit.NewBuilder(redisStore, time.Minute, 100).Build())
+	//redisStore := redis.NewClient(&redis.Options{Addr: config.Config.Redis.Addr, Password: config.Config.Redis.Password})
+	//server.Use(ratelimit.NewBuilder(redisStore, time.Minute, 100).Build())
 	return server
 }
 

@@ -1,3 +1,5 @@
+//go:build dev
+
 package config
 
 var Config = WebookConfig{

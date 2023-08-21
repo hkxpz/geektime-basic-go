@@ -1,0 +1,109 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: webook-mysql
+spec:
+  type: LoadBalancer
+  selector:
+    app: webook-mysql
+  ports:
+    - port: 3308
+      name: mysql
+      protocol: TCP
+      targetPort: 3306
+      nodePort: 30003
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webook-mysql
+  labels:
+    app: webook-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webook-mysql
+  template:
+    metadata:
+      name: webook-mysql
+      labels:
+        app: webook-mysql
+    spec:
+      containers:
+        - name: webook-mysql
+          image: mysql:8.0.32
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: root
+          volumeMounts:
+            - mountPath: /mysql
+              name: mysql-storage
+            - mountPath: /docker-entrypoint-initdb.d
+              name: mysql-initdb
+
+      volumes:
+        - name: mysql-storage
+          persistentVolumeClaim:
+            claimName: webook-mysql-pvc
+        - name: mysql-initdb
+          persistentVolumeClaim:
+            claimName: webook-mysql-initdb-pvc
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: webook-mysql-pvc
+spec:
+  storageClassName: webook-mysql
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: webook-mysql-pv
+spec:
+  storageClassName: webook-mysql
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  nfs:
+    path: "/tmp/nfs/mysql/data"
+    server: 192.168.56.3
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: webook-mysql-initdb-pvc
+spec:
+  storageClassName: webook-mysql-initdb
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: webook-mysql-initdb-pv
+spec:
+  storageClassName: webook-mysql-initdb
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  nfs:
+    path: "/tmp/nfs/mysql/script"
+    server: 192.168.56.3
