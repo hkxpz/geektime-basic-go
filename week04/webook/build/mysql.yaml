@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: webook-mysql
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: webook-mysql
   ports:

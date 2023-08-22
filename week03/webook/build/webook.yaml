@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: webook
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: webook
   ports:
