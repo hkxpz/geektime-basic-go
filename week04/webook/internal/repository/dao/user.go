@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 
@@ -28,14 +29,14 @@ type UserDAO struct {
 }
 
 type User struct {
-	Id           int64  `gorm:"primaryKey,autoIncrement"`
-	Email        string `gorm:"unique;size:50;comment:邮箱"`
-	Password     string `gorm:"comment:密码"`
-	Nickname     string `gorm:"unique;size:30;comment:昵称"`
-	Birthday     string `gorm:"size:10;comment:生日"`
-	Introduction string `gorm:"size:150;comment:个人介绍"`
-	CreateAt     int64  `gorm:"comment:创建时间"`
-	UpdateAt     int64  `gorm:"comment:更新时间"`
+	Id           int64         `gorm:"primaryKey,autoIncrement"`
+	Email        string        `gorm:"unique;size:50;comment:邮箱"`
+	Password     string        `gorm:"comment:密码"`
+	Nickname     string        `gorm:"size:30;comment:昵称"`
+	Birthday     sql.NullInt64 `gorm:"size:10;comment:生日"`
+	Introduction string        `gorm:"size:150;comment:个人介绍"`
+	CreateAt     int64         `gorm:"comment:创建时间"`
+	UpdateAt     int64         `gorm:"comment:更新时间"`
 }
 
 func NewUserDAO(db *gorm.DB) *UserDAO {

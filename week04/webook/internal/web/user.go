@@ -6,10 +6,12 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"geektime-basic-go/week04/webook/internal/domain"
-	"geektime-basic-go/week04/webook/internal/service"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+
+	"geektime-basic-go/week04/webook/internal/domain"
+	"geektime-basic-go/week04/webook/internal/service"
 )
 
 const (
@@ -127,42 +129,40 @@ func (uh *UserHandler) Login(ctx *gin.Context) {
 }
 
 func (uh *UserHandler) Edit(ctx *gin.Context) {
-	type EditReq struct {
-		Id           int64  `json:"id"`
-		Nickname     string `json:"nickname"`
-		Birthday     string `json:"birthday"`
-		Introduction string `json:"introduction"`
-	}
-
-	req := EditReq{}
+	req := struct {
+		Nickname string `json:"nickname"`
+		Birthday string `json:"birthday"`
+		AboutMe  string `json:"aboutMe"`
+	}{}
 	if err := ctx.Bind(&req); err != nil {
-		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
 
+	if req.Nickname == "" {
+		ctx.JSON(http.StatusOK, Result{Code: 4, Msg: "昵称不能为空"})
+		return
+	}
 	if utf8.RuneCountInString(req.Nickname) > 30 {
-		ctx.String(http.StatusOK, "昵称过长")
+		ctx.JSON(http.StatusOK, Result{Code: 4, Msg: "昵称过长"})
 		return
 	}
-	if _, err := time.Parse("2006-01-02", req.Birthday); err != nil {
-		ctx.String(http.StatusOK, "生日错误")
+	if len(req.AboutMe) > 1024 {
+		ctx.JSON(http.StatusOK, Result{Code: 4, Msg: "关于我过长"})
 		return
 	}
-	if utf8.RuneCountInString(req.Introduction) > 50 {
-		ctx.String(http.StatusOK, "个人简介过长")
+	birthday, err := time.Parse(time.DateOnly, req.Birthday)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{Code: 4, Msg: "日期格式不对"})
 		return
 	}
 
-	err := uh.svc.Edit(ctx, domain.User{Id: req.Id, Nickname: req.Nickname, Birthday: req.Birthday, Introduction: req.Introduction})
-	if errors.Is(err, service.ErrUserDuplicateNickname) {
-		ctx.String(http.StatusOK, "重复昵称，请换一个昵称")
-		return
-	}
+	id := ctx.MustGet("user").(UserClaims).Id
+	err = uh.svc.Edit(ctx, domain.User{Id: id, Nickname: req.Nickname, Birthday: birthday, AboutMe: req.AboutMe})
 	if err != nil {
-		ctx.String(http.StatusOK, "系统错误")
+		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "系统错误"})
 		return
 	}
-	ctx.String(http.StatusOK, "更新成功")
+	ctx.JSON(http.StatusOK, Result{Msg: "OK"})
 }
 
 func (uh *UserHandler) Profile(ctx *gin.Context) {
