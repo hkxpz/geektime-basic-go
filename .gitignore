@@ -15,4 +15,4 @@
 # vendor/
 
 .idea
-*local.go
+webook/config/local.go
