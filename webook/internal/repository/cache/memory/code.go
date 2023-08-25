@@ -5,10 +5,12 @@ import (
 	"context"
 	_ "embed"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/allegro/bigcache/v3"
 
@@ -26,6 +28,11 @@ type codeCache struct {
 	l   sync.Mutex
 }
 
+type value struct {
+	Val        any
+	ExpireTime time.Time
+}
+
 func NewMemoryCodeCache(cmd *bigcache.BigCache) cache.CodeCache {
 	return &codeCache{cmd: cmd}
 }
@@ -40,21 +47,40 @@ func (cc *codeCache) Set(ctx context.Context, biz, phone, code string) error {
 	defer cc.l.Unlock()
 
 	key := cc.key(biz, phone)
-	val, err := cc.cmd.Get(key)
+	bs, err := cc.cmd.Get(key)
+	now := time.Now()
 	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
-		log.Println("查询验证码失败:", err)
+		log.Println("memory: 查询验证码失败 ", err)
 		return ErrUnknownForCode
 	}
-	if val != nil {
-		return ErrCodeSendTooMany
+	if err == nil {
+		var val value
+		err = json.Unmarshal(bs, &val)
+		if err != nil {
+			log.Println("memory: 反序列化失败 ", err)
+			return ErrUnknownForCode
+		}
+		if now.Sub(val.ExpireTime) < 60*time.Second {
+			return ErrCodeSendTooMany
+		}
 	}
 
-	if err = cc.cmd.Set(key, []byte(code)); err != nil {
-		log.Println("设置验证码失败:", err)
+	cb, err := json.Marshal(value{Val: code, ExpireTime: now})
+	if err != nil {
+		log.Println("memory: 序列化失败 ", err)
 		return ErrUnknownForCode
 	}
-	if err = cc.cmd.Set(cc.keyCnt(biz, phone), cc.intToByteSlice(3)); err != nil {
-		log.Println("设置验证码校验次数失败:", err)
+	if err = cc.cmd.Set(key, cb); err != nil {
+		log.Println("memory: 设置验证码失败 ", err)
+		return ErrUnknownForCode
+	}
+	nb, err := json.Marshal(value{Val: 3, ExpireTime: now})
+	if err != nil {
+		log.Println("memory: 序列化失败 ", err)
+		return ErrUnknownForCode
+	}
+	if err = cc.cmd.Set(cc.keyCnt(biz, phone), nb); err != nil {
+		log.Println("memory: 设置验证码校验次数失败 ", err)
 		return ErrUnknownForCode
 	}
 	return nil
@@ -69,34 +95,60 @@ func (cc *codeCache) Verify(ctx context.Context, biz, phone, code string) (bool,
 
 	key, keyCnt := cc.key(biz, phone), cc.keyCnt(biz, phone)
 	val, resp, err := cc.cmd.GetWithInfo(keyCnt)
-	cnt := cc.byteSliceToInt(val)
-	switch {
-	case err != nil && !errors.Is(err, bigcache.ErrEntryNotFound):
-		log.Println("查询验证码失败:", err)
+	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
+		log.Println("memory: 查询验证码失败 ", err)
 		return false, err
-	case val == nil, resp.EntryStatus == bigcache.Expired:
+	}
+	if errors.Is(err, bigcache.ErrEntryNotFound) || resp.EntryStatus == bigcache.Expired {
 		return false, nil
-	case cnt < 1:
-		_ = cc.cmd.Delete(key)
-		_ = cc.cmd.Delete(keyCnt)
+	}
+
+	var cnt value
+	err = json.Unmarshal(val, &cnt)
+	if err != nil {
+		log.Println("memory: 反序列化失败 ", err)
+		return false, ErrUnknownForCode
+	}
+	if cnt.Val.(float64) < 1 {
 		return false, ErrCodeVerifyTooManyTimes
 	}
 
 	val, resp, err = cc.cmd.GetWithInfo(key)
-	switch {
-	case err != nil && !errors.Is(err, bigcache.ErrEntryNotFound):
-		log.Println("查询验证码失败:", err)
+	if resp.EntryStatus == bigcache.Expired || errors.Is(err, bigcache.ErrEntryNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		log.Println("memory: 查询验证码失败 ", err)
 		return false, err
-	case resp.EntryStatus == bigcache.Expired, string(val) != code:
-		if err = cc.cmd.Set(keyCnt, cc.intToByteSlice(cnt-1)); err != nil {
-			log.Println("设置验证码校验次数失败:", err)
+	}
+
+	var expectedCode value
+	if err = json.Unmarshal(val, &expectedCode); err != nil {
+		log.Println("memory: 序列化失败 ", err)
+		return false, ErrUnknownForCode
+	}
+	if expectedCode.Val != code {
+		cnt.Val = cnt.Val.(float64) - 1
+		nb, cntErr := json.Marshal(cnt)
+		if cntErr != nil {
+			log.Println("memory: 序列化失败 ", cntErr)
+			return false, ErrUnknownForCode
+		}
+		if err = cc.cmd.Set(keyCnt, nb); err != nil {
+			log.Println("memory: 设置验证码校验次数失败 ", err)
 		}
 		return false, nil
 	}
 
-	_ = cc.cmd.Delete(key)
-	_ = cc.cmd.Delete(keyCnt)
-
+	cnt.Val = -1
+	nb, cntErr := json.Marshal(cnt)
+	if cntErr != nil {
+		log.Println("memory: 序列化失败 ", cntErr)
+		return false, ErrUnknownForCode
+	}
+	if err = cc.cmd.Set(keyCnt, nb); err != nil {
+		log.Println("memory: 设置验证码校验次数失败 ", err)
+	}
 	return true, nil
 }
 
@@ -115,7 +167,7 @@ func (cc *codeCache) byteSliceToInt(src []byte) int64 {
 	bytesBuffer := bytes.NewBuffer(src)
 	var num int64
 	if err := binary.Read(bytesBuffer, binary.BigEndian, &num); err != nil {
-		log.Println("解析缓存失败:", err)
+		log.Println("memory: 解析缓存失败 ", err)
 	}
 	return num
 }
