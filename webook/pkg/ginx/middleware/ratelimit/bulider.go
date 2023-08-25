@@ -44,7 +44,6 @@ func (b *Builder) Build() gin.HandlerFunc {
 			return
 		}
 		if limited {
-			log.Println(err)
 			ctx.AbortWithStatus(http.StatusMisdirectedRequest)
 			return
 		}

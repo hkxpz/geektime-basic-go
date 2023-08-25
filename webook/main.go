@@ -8,6 +8,8 @@ import (
 
 	"geektime-basic-go/webook/internal/repository"
 	"geektime-basic-go/webook/internal/repository/cache"
+	"geektime-basic-go/webook/internal/repository/cache/memory"
+	"geektime-basic-go/webook/internal/repository/cache/redis"
 	"geektime-basic-go/webook/internal/repository/dao"
 	"geektime-basic-go/webook/internal/service"
 	"geektime-basic-go/webook/internal/web"
@@ -22,8 +24,9 @@ func main() {
 func initWebServer() *gin.Engine {
 	cmdable := ioc.InitRedis()
 	db := ioc.InitDB()
-	userCache := cache.NewRedisUserCache(cmdable)
-	codeCache := cache.NewRedisCodeCache(cmdable)
+	userCache := redis.NewRedisUserCache(cmdable)
+	codeCache := memory.NewMemoryCodeCache(ioc.InitMemory())
+	//codeCache := redis.NewRedisCodeCache(cmdable)
 	userHandler := initUserHandler(db, userCache, codeCache)
 	middlewares := ioc.GinMiddlewares(cmdable)
 	return ioc.InitWebServer(userHandler, middlewares...)
