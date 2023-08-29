@@ -11,21 +11,21 @@ import (
 	"geektime-basic-go/webook/internal/service/sms"
 )
 
-type smsService struct {
+type service struct {
 	client   *txsms.Client
 	appId    *string
 	signName *string
 }
 
 func NewService(c *txsms.Client, appId string, signName string) sms.Service {
-	return &smsService{
+	return &service{
 		client:   c,
 		appId:    ekit.ToPtr[string](appId),
 		signName: ekit.ToPtr[string](signName),
 	}
 }
 
-func (s *smsService) Send(ctx context.Context, tplId string, args []string, numbers ...string) error {
+func (s *service) Send(ctx context.Context, tplId string, args []string, numbers ...string) error {
 	req := txsms.NewSendSmsRequest()
 	req.PhoneNumberSet = toStringPtrSlice(numbers)
 	req.SmsSdkAppId = s.appId

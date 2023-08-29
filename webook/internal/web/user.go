@@ -14,12 +14,6 @@ import (
 	"geektime-basic-go/webook/internal/service"
 )
 
-const (
-	emailRegexPattern  = `^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$`
-	passwdRegexPattern = `^^(?=.*[0-9])(?=.*[a-zA-Z])[0-9A-Za-z~!@#$%^&*._?]{8,15}$`
-	phoneRegexPattern  = `^(13[0-9]|14[01456879]|15[0-35-9]|16[2567]|17[0-8]|18[0-9]|19[0-35-9])\d{8}$`
-)
-
 const bizLogin = "login"
 
 var _ handler = &UserHandler{}
@@ -33,6 +27,12 @@ type UserHandler struct {
 }
 
 func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
+	const (
+		emailRegexPattern  = `^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$`
+		passwdRegexPattern = `^^(?=.*[0-9])(?=.*[a-zA-Z])[0-9A-Za-z~!@#$%^&*._?]{8,15}$`
+		phoneRegexPattern  = `^(13[0-9]|14[01456879]|15[0-35-9]|16[2567]|17[0-8]|18[0-9]|19[0-35-9])\d{8}$`
+	)
+
 	return &UserHandler{
 		svc:              svc,
 		codeSvc:          codeSvc,
