@@ -242,10 +242,6 @@ func (uh *UserHandler) LoginSMS(ctx *gin.Context) {
 	}
 
 	u, err := uh.svc.FindOrCreate(ctx, req.Phone)
-	if errors.Is(err, service.ErrUserDuplicate) {
-		ctx.JSON(http.StatusOK, Result{Code: 4, Msg: "重复手机号，请换一个手机号"})
-		return
-	}
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "系统错误"})
 		return
