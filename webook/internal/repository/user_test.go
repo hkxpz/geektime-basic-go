@@ -75,6 +75,53 @@ func TestCachedUserRepository_FindById(t *testing.T) {
 				CreateAt: now,
 			},
 		},
+		{
+			name: "找到用户, 直接命中缓存",
+			mock: func(ctrl *gomock.Controller) (dao.UserDAO, cache.UserCache) {
+				uc := cachemocks.NewMockUserCache(ctrl)
+				uc.EXPECT().Get(gomock.Any(), int64(12)).Return(domain.User{
+					Id:       12,
+					Email:    "123@qq.com",
+					Password: "123456",
+					Phone:    "13888888888",
+					Nickname: "泰裤辣",
+					AboutMe:  "泰裤辣",
+					Birthday: now,
+					CreateAt: now,
+				}, nil)
+
+				return nil, uc
+			},
+			ctx: context.Background(),
+			Id:  12,
+			wantUser: domain.User{
+				Id:       12,
+				Email:    "123@qq.com",
+				Password: "123456",
+				Phone:    "13888888888",
+				Nickname: "泰裤辣",
+				AboutMe:  "泰裤辣",
+				Birthday: now,
+				CreateAt: now,
+			},
+			wantErr: nil,
+		},
+		{
+			name: "没找到用户",
+			mock: func(ctrl *gomock.Controller) (dao.UserDAO, cache.UserCache) {
+				ud := daomocks.NewMockUserDAO(ctrl)
+				uc := cachemocks.NewMockUserCache(ctrl)
+
+				uc.EXPECT().Get(gomock.Any(), int64(12)).Return(domain.User{}, cache.ErrKeyNotExist)
+				ud.EXPECT().FindByID(gomock.Any(), int64(12)).Return(dao.User{}, dao.ErrDataNotFound)
+
+				return ud, uc
+			},
+			ctx:      context.Background(),
+			Id:       12,
+			wantUser: domain.User{},
+			wantErr:  ErrUserNotFound,
+		},
 	}
 
 	for _, tc := range testCases {

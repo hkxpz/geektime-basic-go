@@ -1,5 +1,5 @@
 .PHONY:mockgen
-mockgen:clear mockgen.service mockgen.repository mockgen.dao mockgen.cache
+mockgen:clear mockgen.service mockgen.repository mockgen.dao mockgen.cache mockgen.redis
 
 .PHONY:mockgen.service
 mockgen.service:
@@ -23,6 +23,11 @@ mockgen.cache:
 	@rm -rf ./repository/cache/mocks
 	@mockgen -source=./repository/cache/types.go -package=mocks -destination=./repository/cache/mocks/types.mock.go
 
+.PHONY:mockgen.redis
+mockgen.redis:
+	@rm -rf ./repository/cache/redis/mock
+	@@mockgen -package=mocks -destination=./repository/cache/redis/mocks/cmd.mock.go github.com/redis/go-redis/v9 Cmdable
+
 .PHONY:clear
 clear:
-	@rm -rf ./service/mocks ./repository/mocks ./repository/dao/mocks ./repository/cache/mocks
+	@rm -rf ./service/mocks ./repository/mocks ./repository/dao/mocks ./repository/cache/mocks ./repository/cache/redis/mock
