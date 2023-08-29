@@ -27,7 +27,7 @@ type value struct {
 	ExpireTime time.Time
 }
 
-func NewMemoryCodeCache(cmd *bigcache.BigCache) cache.CodeCache {
+func NewCodeCache(cmd *bigcache.BigCache) cache.CodeCache {
 	return &codeCache{cmd: cmd}
 }
 

@@ -13,7 +13,7 @@ import (
 	"geektime-basic-go/webook/pkg/ginx/middleware/ratelimit"
 )
 
-func InitWebServer(uh *web.UserHandler, fn ...gin.HandlerFunc) *gin.Engine {
+func InitWebServer(uh *web.UserHandler, fn []gin.HandlerFunc) *gin.Engine {
 	server := gin.Default()
 	server.Use(fn...)
 	uh.RegisterRoutes(server)
