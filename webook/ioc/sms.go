@@ -1,3 +1,5 @@
+//go:build !local
+
 package ioc
 
 import (
@@ -8,13 +10,11 @@ import (
 	txsms "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms/v20210111"
 
 	"geektime-basic-go/webook/internal/service/sms"
-	"geektime-basic-go/webook/internal/service/sms/local"
 	"geektime-basic-go/webook/internal/service/sms/tencent"
 )
 
 func InitSmsSvc() sms.Service {
-	return local.NewService()
-	//return initSmsTencentService()
+	return initSmsTencentService()
 }
 
 func initSmsTencentService() sms.Service {
