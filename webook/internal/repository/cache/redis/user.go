@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -27,6 +28,9 @@ func (uc *userCache) Delete(ctx context.Context, id int64) error {
 
 func (uc *userCache) Get(ctx context.Context, id int64) (domain.User, error) {
 	data, err := uc.cmd.Get(ctx, uc.key(id)).Result()
+	if errors.Is(err, redis.Nil) {
+		return domain.User{}, cache.ErrKeyNotExist
+	}
 	if err != nil {
 		return domain.User{}, err
 	}

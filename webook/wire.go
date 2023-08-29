@@ -35,7 +35,7 @@ func InitWebServer() *gin.Engine {
 		// svc
 		ioc.InitSmsSvc,
 		service.NewUserService,
-		service.NreSMSCodeService,
+		service.NewSMSCodeService,
 
 		// handler
 		web.NewUserHandler,

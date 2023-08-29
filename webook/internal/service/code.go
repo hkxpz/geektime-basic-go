@@ -24,7 +24,7 @@ type smsCodeService struct {
 	repo repository.CodeRepository
 }
 
-func NreSMSCodeService(svc sms.Service, repo repository.CodeRepository) CodeService {
+func NewSMSCodeService(svc sms.Service, repo repository.CodeRepository) CodeService {
 	return &smsCodeService{sms: svc, repo: repo}
 }
 

@@ -17,3 +17,5 @@
 
 .idea
 webook/config/local.go
+
+mocks/

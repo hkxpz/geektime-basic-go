@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"geektime-basic-go/webook/internal/domain"
@@ -54,16 +55,20 @@ func (ur *userRepository) Update(ctx context.Context, u domain.User) error {
 
 func (ur *userRepository) FindByID(ctx context.Context, id int64) (domain.User, error) {
 	u, err := ur.cache.Get(ctx, id)
-	if err == nil {
-		return u, err
-	}
-	ue, err := ur.dao.FindByID(ctx, id)
-	if err != nil {
+	switch {
+	default:
 		return domain.User{}, err
+	case err == nil:
+		return u, err
+	case errors.Is(err, cache.ErrKeyNotExist):
+		ue, daoErr := ur.dao.FindByID(ctx, id)
+		if daoErr != nil {
+			return domain.User{}, daoErr
+		}
+		u = ur.entityToDomain(ue)
+		_ = ur.cache.Set(ctx, u)
+		return u, nil
 	}
-	u = ur.entityToDomain(ue)
-	_ = ur.cache.Set(ctx, u)
-	return u, nil
 }
 
 func (ur *userRepository) FindByPhone(ctx context.Context, phone string) (domain.User, error) {

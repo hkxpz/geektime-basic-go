@@ -16,7 +16,7 @@ import (
 
 const bizLogin = "login"
 
-var _ handler = &UserHandler{}
+var _ handler = (*UserHandler)(nil)
 
 type UserHandler struct {
 	svc              service.UserService
@@ -96,7 +96,7 @@ func (uh *UserHandler) SignUp(ctx *gin.Context) {
 		return
 	}
 	if err != nil {
-		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "系统错误"})
+		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "服务器异常，注册失败"})
 		return
 	}
 
