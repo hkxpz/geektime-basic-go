@@ -17,12 +17,6 @@ import (
 	"geektime-basic-go/webook/internal/repository/cache"
 )
 
-var (
-	ErrCodeSendTooMany        = errors.New("发送验证码太频繁")
-	ErrUnknownForCode         = errors.New("发送验证码遇到未知错误")
-	ErrCodeVerifyTooManyTimes = errors.New("验证次数太多")
-)
-
 type codeCache struct {
 	cmd *bigcache.BigCache
 	l   sync.Mutex
@@ -51,37 +45,37 @@ func (cc *codeCache) Set(ctx context.Context, biz, phone, code string) error {
 	now := time.Now()
 	if err != nil && !errors.Is(err, bigcache.ErrEntryNotFound) {
 		log.Println("memory: 查询验证码失败 ", err)
-		return ErrUnknownForCode
+		return cache.ErrUnknownForCode
 	}
 	if err == nil {
 		var val value
 		err = json.Unmarshal(bs, &val)
 		if err != nil {
 			log.Println("memory: 反序列化失败 ", err)
-			return ErrUnknownForCode
+			return cache.ErrUnknownForCode
 		}
 		if now.Sub(val.ExpireTime) < 60*time.Second {
-			return ErrCodeSendTooMany
+			return cache.ErrCodeSendTooMany
 		}
 	}
 
 	cb, err := json.Marshal(value{Val: code, ExpireTime: now})
 	if err != nil {
 		log.Println("memory: 序列化失败 ", err)
-		return ErrUnknownForCode
+		return cache.ErrUnknownForCode
 	}
 	if err = cc.cmd.Set(key, cb); err != nil {
 		log.Println("memory: 设置验证码失败 ", err)
-		return ErrUnknownForCode
+		return cache.ErrUnknownForCode
 	}
 	nb, err := json.Marshal(value{Val: 3, ExpireTime: now})
 	if err != nil {
 		log.Println("memory: 序列化失败 ", err)
-		return ErrUnknownForCode
+		return cache.ErrUnknownForCode
 	}
 	if err = cc.cmd.Set(cc.keyCnt(biz, phone), nb); err != nil {
 		log.Println("memory: 设置验证码校验次数失败 ", err)
-		return ErrUnknownForCode
+		return cache.ErrUnknownForCode
 	}
 	return nil
 }
@@ -107,10 +101,10 @@ func (cc *codeCache) Verify(ctx context.Context, biz, phone, code string) (bool,
 	err = json.Unmarshal(val, &cnt)
 	if err != nil {
 		log.Println("memory: 反序列化失败 ", err)
-		return false, ErrUnknownForCode
+		return false, cache.ErrUnknownForCode
 	}
 	if cnt.Val.(float64) < 1 {
-		return false, ErrCodeVerifyTooManyTimes
+		return false, cache.ErrCodeVerifyTooManyTimes
 	}
 
 	val, resp, err = cc.cmd.GetWithInfo(key)
@@ -125,14 +119,14 @@ func (cc *codeCache) Verify(ctx context.Context, biz, phone, code string) (bool,
 	var expectedCode value
 	if err = json.Unmarshal(val, &expectedCode); err != nil {
 		log.Println("memory: 序列化失败 ", err)
-		return false, ErrUnknownForCode
+		return false, cache.ErrUnknownForCode
 	}
 	if expectedCode.Val != code {
 		cnt.Val = cnt.Val.(float64) - 1
 		nb, cntErr := json.Marshal(cnt)
 		if cntErr != nil {
 			log.Println("memory: 序列化失败 ", cntErr)
-			return false, ErrUnknownForCode
+			return false, cache.ErrUnknownForCode
 		}
 		if err = cc.cmd.Set(keyCnt, nb); err != nil {
 			log.Println("memory: 设置验证码校验次数失败 ", err)
@@ -144,7 +138,7 @@ func (cc *codeCache) Verify(ctx context.Context, biz, phone, code string) (bool,
 	nb, cntErr := json.Marshal(cnt)
 	if cntErr != nil {
 		log.Println("memory: 序列化失败 ", cntErr)
-		return false, ErrUnknownForCode
+		return false, cache.ErrUnknownForCode
 	}
 	if err = cc.cmd.Set(keyCnt, nb); err != nil {
 		log.Println("memory: 设置验证码校验次数失败 ", err)

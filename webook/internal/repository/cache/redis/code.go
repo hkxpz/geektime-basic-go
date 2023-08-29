@@ -3,7 +3,6 @@ package redis
 import (
 	"context"
 	_ "embed"
-	"errors"
 	"fmt"
 
 	"github.com/redis/go-redis/v9"
@@ -16,12 +15,6 @@ var (
 	luaSetCode string
 	//go:embed lua/verify_code.lua
 	luaVerifyCode string
-)
-
-var (
-	ErrCodeSendTooMany        = errors.New("发送验证码太频繁")
-	ErrUnknownForCode         = errors.New("发送验证码遇到未知错误")
-	ErrCodeVerifyTooManyTimes = errors.New("验证次数太多")
 )
 
 type codeCache struct {
@@ -44,11 +37,11 @@ func (cc *codeCache) Set(ctx context.Context, biz, phone, code string) error {
 	}
 	switch res {
 	default:
-		return ErrUnknownForCode
+		return cache.ErrUnknownForCode
 	case 0:
 		return nil
 	case -1:
-		return ErrCodeSendTooMany
+		return cache.ErrCodeSendTooMany
 	}
 }
 
@@ -66,7 +59,7 @@ func (cc *codeCache) Verify(ctx context.Context, biz, phone, code string) (bool,
 	case 0:
 		return true, nil
 	case -1:
-		return false, ErrCodeVerifyTooManyTimes
+		return false, cache.ErrCodeVerifyTooManyTimes
 	}
 }
 

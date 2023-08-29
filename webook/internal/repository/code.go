@@ -4,12 +4,11 @@ import (
 	"context"
 
 	"geektime-basic-go/webook/internal/repository/cache"
-	"geektime-basic-go/webook/internal/repository/cache/redis"
 )
 
 var (
-	ErrCodeVerifyTooManyTimes = redis.ErrCodeVerifyTooManyTimes
-	ErrCodeSendTooMany        = redis.ErrCodeSendTooMany
+	ErrCodeVerifyTooManyTimes = cache.ErrCodeVerifyTooManyTimes
+	ErrCodeSendTooMany        = cache.ErrCodeSendTooMany
 )
 
 type CodeRepository interface {
