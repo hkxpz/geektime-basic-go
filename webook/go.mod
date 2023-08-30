@@ -3,6 +3,7 @@ module geektime-basic-go/webook
 go 1.21.0
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/allegro/bigcache/v3 v3.1.0
 	github.com/dlclark/regexp2 v1.10.0
 	github.com/ecodeclub/ekit v0.0.7
@@ -22,7 +23,6 @@ require (
 )
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.5.0 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect

@@ -164,7 +164,7 @@ func (uh *UserHandler) Edit(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, Result{Code: 4, Msg: "昵称过长"})
 		return
 	}
-	if len(req.AboutMe) > 1024 {
+	if utf8.RuneCountInString(req.AboutMe) > 50 {
 		ctx.JSON(http.StatusOK, Result{Code: 4, Msg: "关于我过长"})
 		return
 	}
@@ -190,7 +190,7 @@ func (uh *UserHandler) Profile(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "系统错误"})
 		return
 	}
-	ctx.JSON(http.StatusOK, user)
+	ctx.JSON(http.StatusOK, Result{Msg: "OK", Data: user})
 }
 
 func (uh *UserHandler) SendSMSLoginCode(ctx *gin.Context) {
