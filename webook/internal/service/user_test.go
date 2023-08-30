@@ -6,12 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"golang.org/x/crypto/bcrypt"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+	"golang.org/x/crypto/bcrypt"
 
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/repository"
@@ -67,7 +65,7 @@ func TestUserService_Signup(t *testing.T) {
 			repo := tc.mock(ctrl)
 			svc := NewUserService(repo)
 			err := svc.Signup(tc.ctx, tc.user)
-			assert.Equal(t, tc.wantErr, err)
+			require.Equal(t, tc.wantErr, err)
 		})
 	}
 }
@@ -169,7 +167,7 @@ func TestUserService_Login(t *testing.T) {
 			repo := tc.mock(ctrl)
 			svc := NewUserService(repo)
 			user, err := svc.Login(tc.ctx, tc.email, tc.password)
-			assert.Equal(t, tc.wantErr, err)
+			require.Equal(t, tc.wantErr, err)
 			assert.Equal(t, tc.wantUser, user)
 		})
 	}
@@ -218,7 +216,7 @@ func TestUserService_Profile(t *testing.T) {
 			repo := tc.mock(ctrl)
 			svc := NewUserService(repo)
 			user, err := svc.Profile(tc.ctx, tc.id)
-			assert.Equal(t, tc.wantErr, err)
+			require.Equal(t, tc.wantErr, err)
 			assert.Equal(t, tc.wantUser, user)
 		})
 	}
@@ -264,7 +262,7 @@ func TestUserService_Edit(t *testing.T) {
 			repo := tc.mock(ctrl)
 			svc := NewUserService(repo)
 			err := svc.Edit(tc.ctx, tc.user)
-			assert.Equal(t, tc.wantErr, err)
+			require.Equal(t, tc.wantErr, err)
 		})
 	}
 }

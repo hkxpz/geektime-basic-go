@@ -1,11 +1,17 @@
 .PHONY:mockgen
-mockgen:clear mockgen.service mockgen.repository mockgen.dao mockgen.cache mockgen.redis
+mockgen:mockgen.service mockgen.service.sms mockgen.repository mockgen.dao mockgen.cache mockgen.redis
 
 .PHONY:mockgen.service
 mockgen.service:
 	@rm -rf ./service/mocks
 	@mockgen -source=./service/user.go -package=mocks -destination=./service/mocks/user.mock.go
 	@mockgen -source=./service/code.go -package=mocks -destination=./service/mocks/code.mock.go
+
+.PHONY:mockgen.service.sms
+mockgen.service.sms:
+	@rm -rf ./service/sms/mocks
+	@mockgen -source=./service/sms/types.go -package=mocks -destination=./service/sms/mocks/types.mock.go
+
 
 .PHONY:mockgen.repository
 mockgen.repository:
@@ -30,4 +36,4 @@ mockgen.redis:
 
 .PHONY:clear
 clear:
-	@rm -rf ./service/mocks ./repository/mocks ./repository/dao/mocks ./repository/cache/mocks ./repository/cache/redis/mock
+	@rm -rf ./service/mocks ./service/sms/mocks ./repository/mocks ./repository/dao/mocks ./repository/cache/mocks ./repository/cache/redis/mock

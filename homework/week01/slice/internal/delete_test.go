@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDelete(t *testing.T) {
@@ -55,7 +56,7 @@ func TestDelete(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			res, val, err := Delete(tc.slice, tc.index)
-			assert.Equal(t, tc.wantErr, err)
+			require.Equal(t, tc.wantErr, err)
 			if err != nil {
 				return
 			}
