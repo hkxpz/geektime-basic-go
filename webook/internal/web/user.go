@@ -122,14 +122,23 @@ func (uh *UserHandler) Login(ctx *gin.Context) {
 		return
 	}
 
-	if err = setJWTToken(ctx, u.Id); err != nil {
+	if err = setToken(ctx, u.Id); err != nil {
 		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "系统错误"})
 		return
 	}
 	ctx.JSON(http.StatusOK, Result{Msg: "登录成功"})
 }
 
-func setJWTToken(ctx *gin.Context, uid int64) error {
+func setToken(ctx *gin.Context, uid int64) error {
+	token, err := newJWTToken(ctx, uid)
+	if err != nil {
+		return err
+	}
+	ctx.Header("x-jwt-token", token)
+	return nil
+}
+
+func newJWTToken(ctx *gin.Context, uid int64) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, UserClaims{
 		Id:        uid,
 		UserAgent: ctx.Request.UserAgent(),
@@ -137,12 +146,7 @@ func setJWTToken(ctx *gin.Context, uid int64) error {
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		},
 	})
-	tokenStr, err := token.SignedString(JWTKey)
-	if err != nil {
-		return err
-	}
-	ctx.Header("x-jwt-token", tokenStr)
-	return nil
+	return token.SignedString(JWTKey)
 }
 
 func (uh *UserHandler) Edit(ctx *gin.Context) {
@@ -247,7 +251,7 @@ func (uh *UserHandler) LoginSMS(ctx *gin.Context) {
 		return
 	}
 
-	if err = setJWTToken(ctx, u.Id); err != nil {
+	if err = setToken(ctx, u.Id); err != nil {
 		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "系统错误"})
 		return
 	}

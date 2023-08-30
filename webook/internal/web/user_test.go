@@ -145,8 +145,10 @@ func TestUserHandler_Login(t *testing.T) {
 	testCases := []struct {
 		name string
 
-		mock func(ctrl *gomock.Controller) service.UserService
-		body io.Reader
+		mock     func(ctrl *gomock.Controller) service.UserService
+		body     io.Reader
+		Id       int64
+		useToken bool
 
 		wantCode int
 		wantBody string
@@ -168,6 +170,8 @@ func TestUserHandler_Login(t *testing.T) {
 				return us
 			},
 			body:     bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123"}`)),
+			Id:       123,
+			useToken: true,
 			wantCode: http.StatusOK,
 			wantBody: `{"code":0,"msg":"登录成功","data":null}`,
 		},
@@ -187,7 +191,8 @@ func TestUserHandler_Login(t *testing.T) {
 				us.EXPECT().Login(gomock.Any(), gomock.Any(), gomock.Any()).Return(domain.User{}, service.ErrInvalidUserOrPassword)
 				return us
 			},
-			body:     bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123"}`)),
+			body: bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123"}`)),
+
 			wantCode: http.StatusOK,
 			wantBody: `{"code":4,"msg":"用户名或密码不正确，请重试","data":null}`,
 		},
@@ -198,7 +203,8 @@ func TestUserHandler_Login(t *testing.T) {
 				us.EXPECT().Login(gomock.Any(), gomock.Any(), gomock.Any()).Return(domain.User{}, errors.New("模拟系统错误"))
 				return us
 			},
-			body:     bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123"}`)),
+			body: bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123"}`)),
+
 			wantCode: http.StatusOK,
 			wantBody: `{"code":5,"msg":"系统错误","data":null}`,
 		},
@@ -220,6 +226,17 @@ func TestUserHandler_Login(t *testing.T) {
 
 			require.Equal(t, tc.wantCode, recorder.Code)
 			assert.Equal(t, tc.wantBody, recorder.Body.String())
+
+			if !tc.useToken {
+				assert.Empty(t, recorder.Header().Get("x-jwt-token"))
+				return
+			}
+
+			ctx := gin.CreateTestContextOnly(recorder, server)
+			ctx.Request = req
+			token, err := newJWTToken(ctx, tc.Id)
+			require.NoError(t, err)
+			assert.Equal(t, token, recorder.Header().Get("x-jwt-token"))
 		})
 	}
 }
@@ -242,7 +259,7 @@ func TestUserHandler_Edit(t *testing.T) {
 				us.EXPECT().Edit(gomock.Any(), gomock.Any()).Return(nil)
 				return us
 			},
-			Id:       int64(1),
+			Id:       123,
 			body:     bytes.NewBuffer([]byte(`{"nickname":"泰裤辣","birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusOK,
 			wantBody: `{"code":0,"msg":"OK","data":null}`,
@@ -252,7 +269,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) service.UserService {
 				return nil
 			},
-			Id:       int64(1),
+			Id:       123,
 			body:     bytes.NewBuffer([]byte(`{,"nickname":"泰裤辣","birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusBadRequest,
 			wantBody: `{"code":5,"msg":"系统错误","data":null}`,
@@ -262,7 +279,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) service.UserService {
 				return nil
 			},
-			Id:       int64(1),
+			Id:       123,
 			body:     bytes.NewBuffer([]byte(`{"birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusOK,
 			wantBody: `{"code":4,"msg":"昵称不能为空","data":null}`,
@@ -272,7 +289,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) service.UserService {
 				return nil
 			},
-			Id:       int64(1),
+			Id:       123,
 			body:     bytes.NewBuffer([]byte(`{"nickname":"泰裤辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣","birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusOK,
 			wantBody: `{"code":4,"msg":"昵称过长","data":null}`,
@@ -282,7 +299,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) service.UserService {
 				return nil
 			},
-			Id:       int64(1),
+			Id:       123,
 			body:     bytes.NewBuffer([]byte(`{"nickname":"泰裤辣","birthday":"2000-01-01","aboutMe":"泰裤辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣"}`)),
 			wantCode: http.StatusOK,
 			wantBody: `{"code":4,"msg":"关于我过长","data":null}`,
@@ -292,7 +309,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) service.UserService {
 				return nil
 			},
-			Id:       int64(1),
+			Id:       123,
 			body:     bytes.NewBuffer([]byte(`{"nickname":"泰裤辣","birthday":"2000-001-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusOK,
 			wantBody: `{"code":4,"msg":"日期格式不对","data":null}`,
@@ -304,7 +321,7 @@ func TestUserHandler_Edit(t *testing.T) {
 				us.EXPECT().Edit(gomock.Any(), gomock.Any()).Return(errors.New("模拟系统错误"))
 				return us
 			},
-			Id:       int64(1),
+			Id:       123,
 			body:     bytes.NewBuffer([]byte(`{"nickname":"泰裤辣","birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusOK,
 			wantBody: `{"code":5,"msg":"系统错误","data":null}`,
@@ -361,7 +378,7 @@ func TestUserHandler_Profile(t *testing.T) {
 				}, nil)
 				return us
 			},
-			Id:       int64(123),
+			Id:       123,
 			wantCode: http.StatusOK,
 			wantBody: fmt.Sprintf(`{"code":0,"msg":"OK","data":{"Id":123,"Email":"123@qq.com","Nickname":"泰裤辣","Password":"$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi","Phone":"13888888888","AboutMe":"泰裤辣","Birthday":"%[1]s","CreateAt":"%[1]s"}}`, now.Format(time.RFC3339Nano)),
 		},
@@ -372,7 +389,7 @@ func TestUserHandler_Profile(t *testing.T) {
 				us.EXPECT().Profile(gomock.Any(), gomock.Any()).Return(domain.User{}, errors.New("模拟系统错误"))
 				return us
 			},
-			Id:       int64(123),
+			Id:       123,
 			wantCode: http.StatusOK,
 			wantBody: `{"code":5,"msg":"系统错误","data":null}`,
 		},
