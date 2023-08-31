@@ -55,7 +55,7 @@ func (cc *codeCache) Verify(ctx context.Context, biz, phone, code string) (bool,
 	}
 	switch res {
 	default:
-		return false, err
+		return false, nil
 	case 0:
 		return true, nil
 	case -1:
