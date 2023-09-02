@@ -1,4 +1,4 @@
-module geektime-basic-go
+module geektime-basic-go/homework/week01
 
 go 1.21.0
 
