@@ -1,4 +1,4 @@
-//go:build !local
+//go:build local
 
 package ioc
 
@@ -16,7 +16,8 @@ import (
 )
 
 func InitWebServer(uh *web.UserHandler, fn []gin.HandlerFunc) *gin.Engine {
-	server := gin.Default()
+	gin.SetMode(gin.ReleaseMode)
+	server := gin.New()
 	server.Use(fn...)
 	uh.RegisterRoutes(server)
 	return server
