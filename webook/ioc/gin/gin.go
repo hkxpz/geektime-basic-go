@@ -1,6 +1,6 @@
-//go:build local
+//go:build !local
 
-package ioc
+package gin
 
 import (
 	"strings"
@@ -16,14 +16,13 @@ import (
 )
 
 func InitWebServer(uh *web.UserHandler, fn []gin.HandlerFunc) *gin.Engine {
-	gin.SetMode(gin.ReleaseMode)
-	server := gin.New()
+	server := gin.Default()
 	server.Use(fn...)
 	uh.RegisterRoutes(server)
 	return server
 }
 
-func GinMiddlewares(cmd redis.Cmdable) []gin.HandlerFunc {
+func Middlewares(cmd redis.Cmdable) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		corsHandler(),
 		login.NewJwtLoginMiddlewareBuilder().SetIgnorePath("/users/signup", "/users/login_sms/code/send",

@@ -6,14 +6,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 
-	"geektime-basic-go/webook/internal/service"
-	"geektime-basic-go/webook/internal/web"
-
 	"geektime-basic-go/webook/internal/repository"
 	"geektime-basic-go/webook/internal/repository/cache/memory"
 	"geektime-basic-go/webook/internal/repository/cache/redis"
 	"geektime-basic-go/webook/internal/repository/dao"
+	"geektime-basic-go/webook/internal/service"
+	"geektime-basic-go/webook/internal/web"
 	"geektime-basic-go/webook/ioc"
+	ginServer "geektime-basic-go/webook/ioc/gin"
+	"geektime-basic-go/webook/ioc/sms"
 )
 
 func InitWebServer() *gin.Engine {
@@ -33,7 +34,7 @@ func InitWebServer() *gin.Engine {
 		repository.NewCodeRepository,
 
 		// svc
-		ioc.InitSmsSvc,
+		sms.InitSmsSvc,
 		service.NewUserService,
 		service.NewSMSCodeService,
 
@@ -41,10 +42,10 @@ func InitWebServer() *gin.Engine {
 		web.NewUserHandler,
 
 		// middleware
-		ioc.GinMiddlewares,
+		ginServer.Middlewares,
 
 		// web
-		ioc.InitWebServer,
+		ginServer.InitWebServer,
 	)
 
 	return new(gin.Engine)

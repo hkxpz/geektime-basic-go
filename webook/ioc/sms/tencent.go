@@ -1,6 +1,6 @@
-//go:build !local
+//go:build tencent
 
-package ioc
+package sms
 
 import (
 	"os"

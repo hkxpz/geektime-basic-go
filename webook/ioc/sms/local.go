@@ -1,5 +1,6 @@
 //go:build local
-package ioc
+
+package sms
 
 import (
 	"geektime-basic-go/webook/internal/service/sms"
