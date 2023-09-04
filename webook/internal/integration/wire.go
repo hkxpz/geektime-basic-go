@@ -3,7 +3,6 @@
 package integration
 
 import (
-	gin2 "geektime-basic-go/webook/ioc/gin"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 
@@ -13,6 +12,7 @@ import (
 	"geektime-basic-go/webook/internal/service"
 	"geektime-basic-go/webook/internal/web"
 	"geektime-basic-go/webook/ioc"
+	ginServer "geektime-basic-go/webook/ioc/gin"
 	"geektime-basic-go/webook/ioc/sms"
 )
 
@@ -33,9 +33,9 @@ func InitWebServer() *gin.Engine {
 
 		web.NewUserHandler,
 
-		gin2.Middlewares,
+		ginServer.Middlewares,
 
-		gin2.InitWebServer,
+		ginServer.InitWebServer,
 	)
 
 	return gin.Default()
