@@ -7,8 +7,7 @@ import (
 	"github.com/google/wire"
 
 	"geektime-basic-go/webook/internal/repository"
-	"geektime-basic-go/webook/internal/repository/cache/memory"
-	"geektime-basic-go/webook/internal/repository/cache/redis"
+	redisCache "geektime-basic-go/webook/internal/repository/cache/redis"
 	"geektime-basic-go/webook/internal/repository/dao"
 	"geektime-basic-go/webook/internal/service"
 	"geektime-basic-go/webook/internal/web"
@@ -25,10 +24,10 @@ func InitWebServer() *gin.Engine {
 		dao.NewUserDAO,
 
 		// cache
-		redis.NewUserCache,
-		//redis.NewCodeCache,
-		ioc.InitMemory,
-		memory.NewCodeCache,
+		redisCache.NewUserCache,
+		redisCache.NewCodeCache,
+		//ioc.InitMemory,
+		//memory.NewCodeCache,
 
 		repository.NewUserRepository,
 		repository.NewCodeRepository,
