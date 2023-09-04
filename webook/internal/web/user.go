@@ -188,13 +188,26 @@ func (uh *UserHandler) Edit(ctx *gin.Context) {
 }
 
 func (uh *UserHandler) Profile(ctx *gin.Context) {
-	userClaims := ctx.MustGet("user").(UserClaims)
-	user, err := uh.svc.Profile(ctx, userClaims.Id)
+	type Profile struct {
+		Email    string `json:"email"`
+		Phone    string `json:"phone"`
+		Nickname string `json:"nickname"`
+		Birthday string `json:"birthday"`
+		AboutMe  string `json:"aboutMe"`
+	}
+	uc := ctx.MustGet("user").(UserClaims)
+	user, err := uh.svc.Profile(ctx, uc.Id)
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "系统错误"})
 		return
 	}
-	ctx.JSON(http.StatusOK, Result{Msg: "OK", Data: user})
+	ctx.JSON(http.StatusOK, Result{Msg: "OK", Data: Profile{
+		Email:    user.Email,
+		Phone:    user.Phone,
+		Nickname: user.Nickname,
+		Birthday: user.Birthday.Format(time.DateOnly),
+		AboutMe:  user.AboutMe,
+	}})
 }
 
 func (uh *UserHandler) SendSMSLoginCode(ctx *gin.Context) {
