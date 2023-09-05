@@ -1,3 +1,6 @@
+.PHONY:mockgen
+mockgen:mockgen.ratelimit
+
 .PHONY:mockgen.ratelimit
 mockgen.ratelimit:
 	@rm -rf ./ratelimit/mocks

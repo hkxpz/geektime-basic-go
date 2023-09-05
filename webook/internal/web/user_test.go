@@ -2,8 +2,8 @@ package web
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -46,7 +46,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 		body io.Reader
 
 		wantCode int
-		wantBody string
+		wantRes  Result
 	}{
 		{
 			name: "注册成功",
@@ -57,7 +57,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123","confirmPassword":"hello@world123"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":0,"msg":"你好，注册成功","data":null}`,
+			wantRes:  Result{Code: 0, Msg: "你好，注册成功"},
 		},
 		{
 			name: "解析输入失败",
@@ -66,7 +66,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123","confirmPassword":"hello@world123",}`)),
 			wantCode: http.StatusBadRequest,
-			wantBody: `{"code":5,"msg":"系统错误","data":null}`,
+			wantRes:  Result{Code: 5, Msg: "系统错误"},
 		},
 		{
 			name: "邮箱格式不正确",
@@ -75,7 +75,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"email":"123@","password":"hello@world123","confirmPassword":"hello@world123"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":4,"msg":"邮箱不正确","data":null}`,
+			wantRes:  Result{Code: 4, Msg: "邮箱不正确"},
 		},
 		{
 			name: "两次密码输入不同",
@@ -84,7 +84,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123.","confirmPassword":"hello@world123"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":4,"msg":"两次输入的密码不相同","data":null}`,
+			wantRes:  Result{Code: 4, Msg: "两次输入的密码不相同"},
 		},
 		{
 			name: "密码格式不对",
@@ -93,7 +93,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello","confirmPassword":"hello"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":4,"msg":"密码必须包括数字、字母两种字符，长度在8-15位之间","data":null}`,
+			wantRes:  Result{Code: 4, Msg: "密码必须包括数字、字母两种字符，长度在8-15位之间"},
 		},
 		{
 			name: "邮箱冲突",
@@ -104,7 +104,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123","confirmPassword":"hello@world123"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":4,"msg":"重复邮箱，请换一个邮箱","data":null}`,
+			wantRes:  Result{Code: 4, Msg: "重复邮箱，请换一个邮箱"},
 		},
 		{
 			name: "系统异常",
@@ -115,7 +115,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123","confirmPassword":"hello@world123"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":5,"msg":"服务器异常，注册失败","data":null}`,
+			wantRes:  Result{Code: 5, Msg: "服务器异常，注册失败"},
 		},
 	}
 
@@ -133,8 +133,11 @@ func TestUserHandler_SignUp(t *testing.T) {
 			recorder := httptest.NewRecorder()
 			server.ServeHTTP(recorder, req)
 
+			var webRes Result
+			err := json.NewDecoder(recorder.Body).Decode(&webRes)
+			require.NoError(t, err)
 			assert.Equal(t, tc.wantCode, recorder.Code)
-			assert.Equal(t, tc.wantBody, recorder.Body.String())
+			assert.Equal(t, tc.wantRes, webRes)
 		})
 	}
 }
@@ -160,7 +163,7 @@ func TestUserHandler_Login(t *testing.T) {
 		useToken bool
 
 		wantCode int
-		wantBody string
+		wantRes  Result
 	}{
 		{
 			name: "登录成功",
@@ -173,7 +176,7 @@ func TestUserHandler_Login(t *testing.T) {
 			Id:       1,
 			useToken: true,
 			wantCode: http.StatusOK,
-			wantBody: `{"code":0,"msg":"登录成功","data":null}`,
+			wantRes:  Result{Code: 0, Msg: "登录成功"},
 		},
 		{
 			name: "解析输入失败",
@@ -182,7 +185,7 @@ func TestUserHandler_Login(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123",}`)),
 			wantCode: http.StatusBadRequest,
-			wantBody: `{"code":5,"msg":"系统错误","data":null}`,
+			wantRes:  Result{Code: 5, Msg: "系统错误"},
 		},
 		{
 			name: "用户名或密码不正确",
@@ -194,7 +197,7 @@ func TestUserHandler_Login(t *testing.T) {
 			body: bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123"}`)),
 
 			wantCode: http.StatusOK,
-			wantBody: `{"code":4,"msg":"用户名或密码不正确，请重试","data":null}`,
+			wantRes:  Result{Code: 4, Msg: "用户名或密码不正确，请重试"},
 		},
 		{
 			name: "系统错误",
@@ -206,7 +209,7 @@ func TestUserHandler_Login(t *testing.T) {
 			body: bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123"}`)),
 
 			wantCode: http.StatusOK,
-			wantBody: `{"code":5,"msg":"系统错误","data":null}`,
+			wantRes:  Result{Code: 5, Msg: "系统错误"},
 		},
 	}
 
@@ -225,7 +228,10 @@ func TestUserHandler_Login(t *testing.T) {
 			server.ServeHTTP(recorder, req)
 
 			require.Equal(t, tc.wantCode, recorder.Code)
-			assert.Equal(t, tc.wantBody, recorder.Body.String())
+			var webRes Result
+			err := json.NewDecoder(recorder.Body).Decode(&webRes)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantRes, webRes)
 
 			if !tc.useToken {
 				assert.Empty(t, recorder.Header().Get("x-jwt-token"))
@@ -258,7 +264,7 @@ func TestUserHandler_Edit(t *testing.T) {
 		Id   int64
 
 		wantCode int
-		wantBody string
+		wantRes  Result
 	}{
 		{
 			name: "修改成功",
@@ -270,7 +276,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			Id:       1,
 			body:     bytes.NewBuffer([]byte(`{"nickname":"泰裤辣","birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":0,"msg":"OK","data":null}`,
+			wantRes:  Result{Code: 0, Msg: "OK"},
 		},
 		{
 			name: "解析输入失败",
@@ -280,7 +286,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			Id:       1,
 			body:     bytes.NewBuffer([]byte(`{,"nickname":"泰裤辣","birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusBadRequest,
-			wantBody: `{"code":5,"msg":"系统错误","data":null}`,
+			wantRes:  Result{Code: 5, Msg: "系统错误"},
 		},
 		{
 			name: "空昵称",
@@ -290,7 +296,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			Id:       1,
 			body:     bytes.NewBuffer([]byte(`{"birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":4,"msg":"昵称不能为空","data":null}`,
+			wantRes:  Result{Code: 4, Msg: "昵称不能为空"},
 		},
 		{
 			name: "昵称过长",
@@ -300,7 +306,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			Id:       1,
 			body:     bytes.NewBuffer([]byte(`{"nickname":"泰裤辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣","birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":4,"msg":"昵称过长","data":null}`,
+			wantRes:  Result{Code: 4, Msg: "昵称过长"},
 		},
 		{
 			name: "关于我过长",
@@ -310,7 +316,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			Id:       1,
 			body:     bytes.NewBuffer([]byte(`{"nickname":"泰裤辣","birthday":"2000-01-01","aboutMe":"泰裤辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":4,"msg":"关于我过长","data":null}`,
+			wantRes:  Result{Code: 4, Msg: "关于我过长"},
 		},
 		{
 			name: "日期格式不对",
@@ -320,7 +326,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			Id:       1,
 			body:     bytes.NewBuffer([]byte(`{"nickname":"泰裤辣","birthday":"2000-001-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":4,"msg":"日期格式不对","data":null}`,
+			wantRes:  Result{Code: 4, Msg: "日期格式不对"},
 		},
 		{
 			name: "系统错误",
@@ -332,7 +338,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			Id:       1,
 			body:     bytes.NewBuffer([]byte(`{"nickname":"泰裤辣","birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":5,"msg":"系统错误","data":null}`,
+			wantRes:  Result{Code: 5, Msg: "系统错误"},
 		},
 	}
 
@@ -352,8 +358,12 @@ func TestUserHandler_Edit(t *testing.T) {
 			})
 			uh.RegisterRoutes(server)
 			server.ServeHTTP(recorder, req)
+
+			var webRes Result
+			err = json.NewDecoder(recorder.Body).Decode(&webRes)
+			require.NoError(t, err)
 			assert.Equal(t, tc.wantCode, recorder.Code)
-			assert.Equal(t, tc.wantBody, recorder.Body.String())
+			assert.Equal(t, tc.wantRes, webRes)
 		})
 	}
 }
@@ -378,7 +388,7 @@ func TestUserHandler_Profile(t *testing.T) {
 		Id   int64
 
 		wantCode int
-		wantBody string
+		wantRes  Result
 	}{
 		{
 			name: "成功",
@@ -389,7 +399,13 @@ func TestUserHandler_Profile(t *testing.T) {
 			},
 			Id:       1,
 			wantCode: http.StatusOK,
-			wantBody: fmt.Sprintf(`{"code":0,"msg":"OK","data":{"Id":1,"Email":"123@qq.com","Nickname":"泰裤辣","Password":"$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi","Phone":"13888888888","AboutMe":"泰裤辣","Birthday":"%[1]s","CreateAt":"%[1]s"}}`, now.Format(time.RFC3339Nano)),
+			wantRes: Result{Code: 0, Msg: "OK", Data: map[string]interface{}{
+				"aboutMe":  "泰裤辣",
+				"birthday": "2023-09-05",
+				"email":    "123@qq.com",
+				"nickname": "泰裤辣",
+				"phone":    "13888888888",
+			}},
 		},
 		{
 			name: "失败",
@@ -400,7 +416,7 @@ func TestUserHandler_Profile(t *testing.T) {
 			},
 			Id:       1,
 			wantCode: http.StatusOK,
-			wantBody: `{"code":5,"msg":"系统错误","data":null}`,
+			wantRes:  Result{Code: 5, Msg: "系统错误"},
 		},
 	}
 
@@ -420,8 +436,12 @@ func TestUserHandler_Profile(t *testing.T) {
 			})
 			uh.RegisterRoutes(server)
 			server.ServeHTTP(recorder, req)
+
+			var webRes Result
+			err := json.NewDecoder(recorder.Body).Decode(&webRes)
+			require.NoError(t, err)
 			assert.Equal(t, tc.wantCode, recorder.Code)
-			assert.Equal(t, tc.wantBody, recorder.Body.String())
+			assert.Equal(t, tc.wantRes, webRes)
 		})
 	}
 }
@@ -435,7 +455,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 		body io.Reader
 
 		wantCode int
-		wantBody string
+		wantRes  Result
 	}{
 		{
 			name: "发送成功",
@@ -446,7 +466,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone":"13888888888"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":0,"msg":"发送成功","data":null}`,
+			wantRes:  Result{Code: 0, Msg: "发送成功"},
 		},
 		{
 			name: "解析输入失败",
@@ -455,7 +475,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone""13888888888"}`)),
 			wantCode: http.StatusBadRequest,
-			wantBody: `{"code":5,"msg":"系统错误","data":null}`,
+			wantRes:  Result{Code: 5, Msg: "系统错误"},
 		},
 		{
 			name: "手机号码错误",
@@ -464,7 +484,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone":"1388888888"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":4,"msg":"手机号码错误","data":null}`,
+			wantRes:  Result{Code: 4, Msg: "手机号码错误"},
 		},
 		{
 			name: "短信发送太频繁",
@@ -475,7 +495,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone":"13888888888"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":4,"msg":"短信发送太频繁，请稍后再试","data":null}`,
+			wantRes:  Result{Code: 4, Msg: "短信发送太频繁，请稍后再试"},
 		},
 		{
 			name: "系统错误",
@@ -486,7 +506,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone":"13888888888"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":5,"msg":"系统错误","data":null}`,
+			wantRes:  Result{Code: 5, Msg: "系统错误"},
 		},
 	}
 
@@ -503,8 +523,12 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			server := gin.New()
 			uh.RegisterRoutes(server)
 			server.ServeHTTP(recorder, req)
+
+			var webRes Result
+			err := json.NewDecoder(recorder.Body).Decode(&webRes)
+			require.NoError(t, err)
 			assert.Equal(t, tc.wantCode, recorder.Code)
-			assert.Equal(t, tc.wantBody, recorder.Body.String())
+			assert.Equal(t, tc.wantRes, webRes)
 		})
 	}
 }
@@ -529,7 +553,7 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 		body io.Reader
 
 		wantCode int
-		wantBody string
+		wantRes  Result
 	}{
 		{
 			name: "登录成功",
@@ -542,7 +566,7 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone":"13888888888","code":"123456"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":0,"msg":"登录成功","data":null}`,
+			wantRes:  Result{Code: 0, Msg: "登录成功"},
 		},
 		{
 			name: "解析输入失败",
@@ -551,7 +575,7 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone":"13888888888""code":"123456"}`)),
 			wantCode: http.StatusBadRequest,
-			wantBody: `{"code":5,"msg":"系统错误","data":null}`,
+			wantRes:  Result{Code: 5, Msg: "系统错误"},
 		},
 		{
 			name: "验证码校验失败",
@@ -562,7 +586,7 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone":"13888888888","code":"123456"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":5,"msg":"系统错误","data":null}`,
+			wantRes:  Result{Code: 5, Msg: "系统错误"},
 		},
 		{
 			name: "验证码错误",
@@ -573,7 +597,7 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone":"13888888888","code":"123456"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":4,"msg":"验证码错误","data":null}`,
+			wantRes:  Result{Code: 4, Msg: "验证码错误"},
 		},
 		{
 			name: "查找用户失败",
@@ -586,7 +610,7 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone":"13888888888","code":"123456"}`)),
 			wantCode: http.StatusOK,
-			wantBody: `{"code":5,"msg":"系统错误","data":null}`,
+			wantRes:  Result{Code: 5, Msg: "系统错误"},
 		},
 	}
 
@@ -603,8 +627,12 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 			server := gin.New()
 			uh.RegisterRoutes(server)
 			server.ServeHTTP(recorder, req)
+
+			var webRes Result
+			err := json.NewDecoder(recorder.Body).Decode(&webRes)
+			require.NoError(t, err)
 			assert.Equal(t, tc.wantCode, recorder.Code)
-			assert.Equal(t, tc.wantBody, recorder.Body.String())
+			assert.Equal(t, tc.wantRes, webRes)
 		})
 	}
 }

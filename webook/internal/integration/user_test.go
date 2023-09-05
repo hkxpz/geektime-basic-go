@@ -143,11 +143,11 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			recorder := httptest.NewRecorder()
 			server.ServeHTTP(recorder, req)
 
-			var result web.Result
-			err := json.Unmarshal(recorder.Body.Bytes(), &result)
+			var webRes web.Result
+			err := json.NewDecoder(recorder.Body).Decode(&webRes)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.wantCode, recorder.Code)
-			assert.Equal(t, tc.wantResult, result)
+			assert.Equal(t, tc.wantResult, webRes)
 			tc.after(t)
 		})
 	}
@@ -246,11 +246,11 @@ func TestUserHandler_Profile(t *testing.T) {
 			recorder := httptest.NewRecorder()
 			server.ServeHTTP(recorder, req)
 
-			var result web.Result
-			err = json.Unmarshal(recorder.Body.Bytes(), &result)
+			var webRes web.Result
+			err = json.NewDecoder(recorder.Body).Decode(&webRes)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.wantCode, recorder.Code)
-			assert.Equal(t, tc.wantResult, result)
+			assert.Equal(t, tc.wantResult, webRes)
 			tc.after(t)
 		})
 	}
