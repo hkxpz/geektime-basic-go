@@ -62,16 +62,13 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 				ctx := context.Background()
 				key := "phone_code:login:13888888888"
 
-				val, err := rdb.Get(ctx, key).Result()
-				require.NoError(t, err)
-				assert.True(t, len(val) == 6)
-
 				ttl, err := rdb.TTL(ctx, key).Result()
 				require.NoError(t, err)
 				assert.True(t, ttl > 9*time.Minute)
 
-				err = rdb.Del(ctx, key).Err()
+				val, err := rdb.GetDel(ctx, key).Result()
 				require.NoError(t, err)
+				assert.True(t, len(val) == 6)
 			},
 			body:       []byte(`{"phone": "13888888888"}`),
 			wantCode:   http.StatusOK,
@@ -98,12 +95,9 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 				ctx := context.Background()
 				key := "phone_code:login:13888888888"
 
-				val, err := rdb.Get(ctx, key).Result()
+				val, err := rdb.GetDel(ctx, key).Result()
 				require.NoError(t, err)
 				assert.Equal(t, "123456", val)
-
-				err = rdb.Del(ctx, key).Err()
-				require.NoError(t, err)
 			},
 			body:       []byte(`{"phone": "13888888888"}`),
 			wantCode:   http.StatusOK,
@@ -122,12 +116,9 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 				ctx := context.Background()
 				key := "phone_code:login:13888888888"
 
-				val, err := rdb.Get(ctx, key).Result()
+				val, err := rdb.GetDel(ctx, key).Result()
 				require.NoError(t, err)
 				assert.Equal(t, "123456", val)
-
-				err = rdb.Del(ctx, key).Err()
-				require.NoError(t, err)
 			},
 			body:       []byte(`{"phone": "13888888888"}`),
 			wantCode:   http.StatusOK,
@@ -170,28 +161,19 @@ func TestUserHandler_Profile(t *testing.T) {
 		wantResult web.Result
 	}{
 		{
-			name: "未命中缓存",
-			before: func(t *testing.T) {
-				ctx := context.Background()
-				key := "user:info:1"
-
-				err := rdb.Del(ctx, key).Err()
-				require.NoError(t, err)
-			},
+			name:   "未命中缓存",
+			before: func(t *testing.T) {},
 			after: func(t *testing.T) {
 				ctx := context.Background()
 				key := "user:info:1"
-
-				val, err := rdb.Get(ctx, key).Result()
-				require.NoError(t, err)
-				assert.NotEmpty(t, val)
 
 				ttl, err := rdb.TTL(ctx, key).Result()
 				require.NoError(t, err)
 				assert.True(t, ttl > 14*time.Minute)
 
-				err = rdb.Del(ctx, key).Err()
+				val, err := rdb.GetDel(ctx, key).Result()
 				require.NoError(t, err)
+				assert.NotEmpty(t, val)
 			},
 			id:       1,
 			wantCode: http.StatusOK,
@@ -209,17 +191,12 @@ func TestUserHandler_Profile(t *testing.T) {
 				ctx := context.Background()
 				key := "user:info:1"
 				val := `{"Id":1,"Email":"admin@qq.com","Nickname":"大帅比","Password":"$2a$10$kluhFOjypyF6zJHFqtE2bOWGavAA9wJAaadkOww4wQSw.E046i8Z.","Phone":"13888888888","AboutMe":"泰裤辣","Birthday":"2000-01-01T08:00:00+08:00","CreateAt":"2023-08-24T09:03:01.245+08:00"}`
-
-				err := rdb.Del(ctx, key).Err()
-				require.NoError(t, err)
-
-				err = rdb.Set(ctx, key, val, 15*time.Minute).Err()
+				err := rdb.Set(ctx, key, val, 15*time.Minute).Err()
 				require.NoError(t, err)
 			},
 			after: func(t *testing.T) {
 				ctx := context.Background()
 				key := "user:info:1"
-
 				err := rdb.Del(ctx, key).Err()
 				require.NoError(t, err)
 			},
