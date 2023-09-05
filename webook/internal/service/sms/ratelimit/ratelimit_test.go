@@ -33,7 +33,7 @@ func TestService_Send(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) (sms.Service, ratelimit.Limiter) {
 				svc := mocks.NewMockService(ctrl)
 				limiter := limitmocks.NewMockLimiter(ctrl)
-				limiter.EXPECT().Limit(ctx, key).Return(false, nil)
+				limiter.EXPECT().Limit(ctx, "sms_alibaba").Return(false, nil)
 				svc.EXPECT().Send(ctx, gomock.Any(), []string{"123456"}, "13888888888").Return(nil)
 				return svc, limiter
 			},
@@ -45,25 +45,25 @@ func TestService_Send(t *testing.T) {
 			name: "触发限流",
 			mock: func(ctrl *gomock.Controller) (sms.Service, ratelimit.Limiter) {
 				limiter := limitmocks.NewMockLimiter(ctrl)
-				limiter.EXPECT().Limit(ctx, key).Return(true, nil)
+				limiter.EXPECT().Limit(ctx, "sms_alibaba").Return(true, nil)
 				return nil, limiter
 			},
 			ctx:     ctx,
 			phone:   "13888888888",
 			code:    "123456",
-			wantErr: errors.New("短信服务触发限流"),
+			wantErr: sms.ErrLimited,
 		},
 		{
 			name: "限流异常",
 			mock: func(ctrl *gomock.Controller) (sms.Service, ratelimit.Limiter) {
 				limiter := limitmocks.NewMockLimiter(ctrl)
-				limiter.EXPECT().Limit(ctx, key).Return(false, errors.New("限流器异常"))
+				limiter.EXPECT().Limit(ctx, "sms_alibaba").Return(false, errors.New("限流器异常"))
 				return nil, limiter
 			},
 			ctx:     ctx,
 			phone:   "13888888888",
 			code:    "123456",
-			wantErr: fmt.Errorf("短信服务判断是否限流异常 %w", errors.New("限流器异常")),
+			wantErr: fmt.Errorf("短信服务限流异常 %w", errors.New("限流器异常")),
 		},
 	}
 
@@ -72,7 +72,7 @@ func TestService_Send(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			svc, limiter := tc.mock(ctrl)
-			limitSvc := NewService(svc, limiter)
+			limitSvc := NewService(svc, limiter, "sms_alibaba")
 			err := limitSvc.Send(tc.ctx, "", []string{tc.code}, tc.phone)
 			assert.Equal(t, tc.wantErr, err)
 		})

@@ -25,14 +25,15 @@ func (s *service) Send(ctx context.Context, tplId string, args []string, numbers
 		svc := s.svcs[i%length]
 		err := svc.Send(ctx, tplId, args, numbers...)
 		switch {
+		default:
+			log.Printf("发送失败: %v", svc)
 		case err == nil:
 			return nil
 		case errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled):
 			return err
 		}
-		log.Printf("发送失败: %v", svc)
 	}
-	return errors.New("发送失败，所有服务商都尝试过了")
+	return sms.ErrServiceProviderException
 }
 
 func (s *service) SendV1(ctx context.Context, tplId string, args []string, numbers ...string) error {

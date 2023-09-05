@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 
-	"geektime-basic-go/homework/week04/domain"
-	"geektime-basic-go/homework/week04/repository/dao"
+	"geektime-basic-go/webook/internal/domain"
+	"geektime-basic-go/webook/internal/repository/dao"
 )
 
 type Repository interface {
