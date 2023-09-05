@@ -43,7 +43,6 @@ func (t *timeoutService) Send(ctx context.Context, tplId string, args []string, 
 		atomic.StoreUint32(&t.cnt, 0)
 	case errors.Is(err, context.DeadlineExceeded):
 		atomic.AddUint32(&t.cnt, 1)
-
 	}
 	return err
 }

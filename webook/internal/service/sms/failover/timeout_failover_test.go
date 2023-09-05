@@ -2,6 +2,7 @@ package failover
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,9 +33,53 @@ func TestTimeoutService_Send(t *testing.T) {
 				return []sms.Service{svc0}
 			},
 			threshold: 3,
-			wantErr:   context.DeadlineExceeded,
+			cnt:       0,
+			idx:       0,
 			wanCnt:    1,
 			wantIdx:   0,
+			wantErr:   context.DeadlineExceeded,
+		},
+		{
+			name: "触发了切换,切换之后成功了",
+			mock: func(ctrl *gomock.Controller) []sms.Service {
+				svc0 := mocks.NewMockService(ctrl)
+				svc1 := mocks.NewMockService(ctrl)
+				svc1.EXPECT().Send(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+				return []sms.Service{svc0, svc1}
+			},
+			threshold: 3,
+			cnt:       3,
+			wanCnt:    0,
+			wantIdx:   1,
+			wantErr:   nil,
+		},
+		{
+			name: "触发了切换,切换之后失败",
+			mock: func(ctrl *gomock.Controller) []sms.Service {
+				svc0 := mocks.NewMockService(ctrl)
+				svc1 := mocks.NewMockService(ctrl)
+				svc1.EXPECT().Send(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("发送失败"))
+				return []sms.Service{svc0, svc1}
+			},
+			threshold: 3,
+			cnt:       3,
+			wanCnt:    0,
+			wantIdx:   1,
+			wantErr:   errors.New("发送失败"),
+		},
+		{
+			name: "触发了切换,切换之后依旧超时",
+			mock: func(ctrl *gomock.Controller) []sms.Service {
+				svc0 := mocks.NewMockService(ctrl)
+				svc1 := mocks.NewMockService(ctrl)
+				svc1.EXPECT().Send(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(context.DeadlineExceeded)
+				return []sms.Service{svc0, svc1}
+			},
+			threshold: 3,
+			cnt:       3,
+			wanCnt:    1,
+			wantIdx:   1,
+			wantErr:   context.DeadlineExceeded,
 		},
 	}
 
