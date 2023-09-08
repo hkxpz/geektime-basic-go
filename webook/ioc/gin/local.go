@@ -12,7 +12,8 @@ import (
 
 	"geektime-basic-go/webook/internal/web"
 	"geektime-basic-go/webook/internal/web/middleware/login"
-	"geektime-basic-go/webook/pkg/ginx/middleware/ratelimit"
+	ginRatelimit "geektime-basic-go/webook/pkg/ginx/middleware/ratelimit"
+	"geektime-basic-go/webook/pkg/ratelimit"
 )
 
 func InitWebServer(uh *web.UserHandler, fn []gin.HandlerFunc) *gin.Engine {
@@ -29,7 +30,7 @@ func Middlewares(cmd redis.Cmdable) []gin.HandlerFunc {
 		corsHandler(),
 		login.NewJwtLoginMiddlewareBuilder().SetIgnorePath("/users/signup", "/users/login_sms/code/send",
 			"/users/login_sms", "/users/login").Build(),
-		ratelimit.NewBuilder(cmd, time.Minute, 100).Build(),
+		ginRatelimit.NewBuilder(ratelimit.NewRedisSlideWindowLimiter(cmd, time.Minute, 100)).Build(),
 	}
 }
 
