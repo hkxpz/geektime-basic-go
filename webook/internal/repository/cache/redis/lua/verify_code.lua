@@ -3,7 +3,7 @@ local key = KEYS[1]
 local cntKey = key .. ":cnt"
 local cnt = tonumber(redis.call("get", cntKey))
 -- 验证次数已经耗尽了
-if cnt <= 0 then
+if cnt == nil or cnt <= 0 then
     return -1
 end
 
@@ -13,7 +13,8 @@ end
 local expectedCode = ARGV[1]
 local code = redis.call("get", key)
 if code == expectedCode then
-    redis.call("set", cntKey, -1)
+    local ttl = tonumber(redis.call("ttl", key))
+    redis.call("setex", cntKey, ttl, -1)
     return 0
 else
     redis.call("decr", cntKey)

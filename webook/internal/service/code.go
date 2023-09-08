@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/rand"
-	"strconv"
 
 	"geektime-basic-go/webook/internal/repository"
 	"geektime-basic-go/webook/internal/service/sms"
@@ -46,5 +46,5 @@ func (s *smsCodeService) Verify(ctx context.Context, biz, phone, code string) (b
 }
 
 func (s *smsCodeService) generate() string {
-	return strconv.Itoa(rand.Intn(999999))
+	return fmt.Sprintf("%06d", rand.Intn(999999))
 }
