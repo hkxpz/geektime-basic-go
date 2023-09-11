@@ -89,7 +89,7 @@ func TestUserService_Login(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) repository.UserRepository {
 				repo := mocks.NewMockUserRepository(ctrl)
 				repo.EXPECT().FindByEmail(context.Background(), "123@qq.com").Return(domain.User{
-					Id:       123,
+					ID:       123,
 					Email:    "123@qq.com",
 					Nickname: "泰裤辣",
 					Password: "$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi",
@@ -104,7 +104,7 @@ func TestUserService_Login(t *testing.T) {
 			email:    "123@qq.com",
 			password: "hello#world123",
 			wantUser: domain.User{
-				Id:       123,
+				ID:       123,
 				Email:    "123@qq.com",
 				Nickname: "泰裤辣",
 				Password: "$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi",
@@ -141,7 +141,7 @@ func TestUserService_Login(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) repository.UserRepository {
 				repo := mocks.NewMockUserRepository(ctrl)
 				repo.EXPECT().FindByEmail(context.Background(), "123@qq.com").Return(domain.User{
-					Id:       123,
+					ID:       123,
 					Email:    "123@qq.com",
 					Nickname: "泰裤辣",
 					Password: "$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi",
@@ -186,12 +186,12 @@ func TestUserService_Profile(t *testing.T) {
 			name: "获取成功",
 			mock: func(ctrl *gomock.Controller) repository.UserRepository {
 				repo := mocks.NewMockUserRepository(ctrl)
-				repo.EXPECT().FindByID(gomock.Any(), gomock.Any()).Return(domain.User{Id: 1}, nil)
+				repo.EXPECT().FindByID(gomock.Any(), gomock.Any()).Return(domain.User{ID: 1}, nil)
 				return repo
 			},
 			ctx:      context.Background(),
 			id:       1,
-			wantUser: domain.User{Id: 1},
+			wantUser: domain.User{ID: 1},
 			wantErr:  nil,
 		},
 		{

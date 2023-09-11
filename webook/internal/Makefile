@@ -1,5 +1,10 @@
 .PHONY:mockgen
-mockgen:mockgen.service mockgen.service.sms mockgen.repository mockgen.dao mockgen.cache mockgen.redis
+mockgen:mockgen.jwt mockgen.service mockgen.service.sms mockgen.repository mockgen.dao mockgen.cache mockgen.redis
+
+.PHONY:mockgen.jwt
+mockgen.jwt:
+	@rm -rf ./web/jwt/mocks
+	@mockgen -source=./web/jwt/types.go -package=mocks -destination=./web/jwt/mocks/types.mock_gen.go
 
 .PHONY:mockgen.service
 mockgen.service:
@@ -36,4 +41,10 @@ mockgen.redis:
 
 .PHONY:clear
 clear:
-	@rm -rf ./service/mocks ./service/sms/mocks ./repository/mocks ./repository/dao/mocks ./repository/cache/mocks ./repository/cache/redis/mocks
+	@rm -rf ./service/mocks \
+	./service/sms/mocks \
+	./repository/mocks \
+	./repository/dao/mocks \
+	./repository/cache/mocks \
+	./repository/cache/redis/mocks \
+	./web/jwt/mocks

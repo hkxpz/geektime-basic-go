@@ -22,6 +22,7 @@ type UserRepository interface {
 	FindByID(ctx context.Context, id int64) (domain.User, error)
 	FindByEmail(ctx context.Context, email string) (domain.User, error)
 	FindByPhone(ctx context.Context, phone string) (domain.User, error)
+	FindByWechat(ctx context.Context, openID string) (domain.User, error)
 }
 
 type userRepository struct {
@@ -35,9 +36,11 @@ func NewUserRepository(d dao.UserDAO, cache cache.UserCache) UserRepository {
 
 func (ur *userRepository) Create(ctx context.Context, u domain.User) error {
 	return ur.dao.Insert(ctx, dao.User{
-		Email:    sql.NullString{String: u.Email, Valid: u.Email != ""},
-		Phone:    sql.NullString{String: u.Phone, Valid: u.Phone != ""},
-		Password: u.Password,
+		Email:         sql.NullString{String: u.Email, Valid: u.Email != ""},
+		Phone:         sql.NullString{String: u.Phone, Valid: u.Phone != ""},
+		WechatOpenID:  sql.NullString{String: u.WechatInfo.OpenID, Valid: u.WechatInfo.OpenID != ""},
+		WechatUnionID: sql.NullString{String: u.WechatInfo.UnionID, Valid: u.WechatInfo.UnionID != ""},
+		Password:      u.Password,
 	})
 }
 
@@ -50,7 +53,7 @@ func (ur *userRepository) Update(ctx context.Context, u domain.User) error {
 	if err := ur.dao.Update(ctx, ur.domainToEntity(u)); err != nil {
 		return err
 	}
-	return ur.cache.Delete(ctx, u.Id)
+	return ur.cache.Delete(ctx, u.ID)
 }
 
 func (ur *userRepository) FindByID(ctx context.Context, id int64) (domain.User, error) {
@@ -76,26 +79,35 @@ func (ur *userRepository) FindByPhone(ctx context.Context, phone string) (domain
 	return ur.entityToDomain(u), err
 }
 
+func (ur *userRepository) FindByWechat(ctx context.Context, openID string) (domain.User, error) {
+	u, err := ur.dao.FindByWechat(ctx, openID)
+	return ur.entityToDomain(u), err
+}
+
 func (ur *userRepository) entityToDomain(ue dao.User) domain.User {
 	var birthday time.Time
 	if ue.Birthday.Valid {
 		birthday = time.UnixMilli(ue.Birthday.Int64)
 	}
 	return domain.User{
-		Id:       ue.Id,
+		ID:       ue.Id,
 		Email:    ue.Email.String,
 		Password: ue.Password,
 		Phone:    ue.Phone.String,
 		Nickname: ue.Nickname.String,
 		AboutMe:  ue.AboutMe.String,
 		Birthday: birthday,
+		WechatInfo: domain.WechatInfo{
+			OpenID:  ue.WechatOpenID.String,
+			UnionID: ue.WechatUnionID.String,
+		},
 		CreateAt: time.UnixMilli(ue.CreateAt),
 	}
 }
 
 func (ur *userRepository) domainToEntity(u domain.User) dao.User {
 	return dao.User{
-		Id:       u.Id,
+		Id:       u.ID,
 		Email:    sql.NullString{String: u.Email, Valid: u.Email != ""},
 		Phone:    sql.NullString{String: u.Phone, Valid: u.Phone != ""},
 		Birthday: sql.NullInt64{Int64: u.Birthday.UnixMilli(), Valid: !u.Birthday.IsZero()},

@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ErrUserDuplicate = repository.ErrUserDuplicate
+	ErrUserDuplicate         = repository.ErrUserDuplicate
 	ErrInvalidUserOrPassword = errors.New("邮箱或者密码不正确")
 )
 
@@ -21,6 +21,7 @@ type UserService interface {
 	Profile(ctx context.Context, id int64) (domain.User, error)
 	Edit(ctx context.Context, user domain.User) error
 	FindOrCreate(ctx context.Context, phone string) (domain.User, error)
+	FindOrCreateByWechat(ctx context.Context, info domain.WechatInfo) (domain.User, error)
 }
 
 type userService struct {
@@ -76,4 +77,17 @@ func (svc *userService) FindOrCreate(ctx context.Context, phone string) (domain.
 		return domain.User{}, err
 	}
 	return svc.repo.FindByPhone(ctx, phone)
+}
+
+func (svc *userService) FindOrCreateByWechat(ctx context.Context, info domain.WechatInfo) (domain.User, error) {
+	u, err := svc.repo.FindByWechat(ctx, info.OpenID)
+	if !errors.Is(err, repository.ErrUserNotFound) {
+		return u, err
+	}
+
+	err = svc.repo.Create(ctx, domain.User{WechatInfo: info})
+	if err != nil && !errors.Is(err, repository.ErrUserDuplicate) {
+		return domain.User{}, err
+	}
+	return svc.repo.FindByWechat(ctx, info.OpenID)
 }

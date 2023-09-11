@@ -1,5 +1,3 @@
-//go:build !local
-
 package gin
 
 import (
@@ -16,18 +14,22 @@ import (
 	"geektime-basic-go/webook/pkg/ratelimit"
 )
 
-func InitWebServer(uh *web.UserHandler, fn []gin.HandlerFunc) *gin.Engine {
+func InitWebServer(uh *web.UserHandler, oh *web.OAuth2WechatHandler, fn []gin.HandlerFunc) *gin.Engine {
 	server := gin.Default()
 	server.Use(fn...)
 	uh.RegisterRoutes(server)
+	oh.RegisterRoutes(server)
 	return server
 }
 
 func Middlewares(cmd redis.Cmdable) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		corsHandler(),
-		login.NewJwtLoginMiddlewareBuilder().SetIgnorePath("/users/signup", "/users/login_sms/code/send",
-			"/users/login_sms", "/users/login").Build(),
+		login.NewJwtLoginMiddlewareBuilder().
+			SetIgnorePath("/users/signup", "/users/login").
+			SetIgnorePath("/users/login_sms/code/send", "/users/login_sms").
+			SetIgnorePath("/oauth2/wechat/authurl", "/oauth2/wechat/callback").
+			Build(),
 		ginRatelimit.NewBuilder(ratelimit.NewRedisSlideWindowLimiter(cmd, time.Minute, 100)).Build(),
 	}
 }

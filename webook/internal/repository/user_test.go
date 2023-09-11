@@ -73,7 +73,7 @@ func TestUserRepository_Update(t *testing.T) {
 	nowMs := time.Now().UnixMilli()
 	now := time.UnixMilli(nowMs)
 	userDomain := domain.User{
-		Id:       1,
+		ID:       1,
 		Email:    "123@qq.com",
 		Nickname: "泰裤辣",
 		Password: "$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi",
@@ -149,7 +149,7 @@ func TestUserRepository_FindByID(t *testing.T) {
 	nowMs := time.Now().UnixMilli()
 	now := time.UnixMilli(nowMs)
 	userDomain := domain.User{
-		Id:       1,
+		ID:       1,
 		Email:    "123@qq.com",
 		Nickname: "泰裤辣",
 		Password: "$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi",
@@ -243,7 +243,7 @@ func TestUserRepository_FindByEmail(t *testing.T) {
 	nowMs := time.Now().UnixMilli()
 	now := time.UnixMilli(nowMs)
 	userDomain := domain.User{
-		Id:       1,
+		ID:       1,
 		Email:    "123@qq.com",
 		Nickname: "泰裤辣",
 		Password: "$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi",
@@ -311,7 +311,7 @@ func TestUserRepository_FindByPhone(t *testing.T) {
 	nowMs := time.Now().UnixMilli()
 	now := time.UnixMilli(nowMs)
 	userDomain := domain.User{
-		Id:       1,
+		ID:       1,
 		Email:    "123@qq.com",
 		Nickname: "泰裤辣",
 		Password: "$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi",

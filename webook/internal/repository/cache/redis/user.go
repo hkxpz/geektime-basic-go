@@ -44,7 +44,7 @@ func (uc *userCache) Set(ctx context.Context, u domain.User) error {
 	if err != nil {
 		return err
 	}
-	return uc.cmd.Set(ctx, uc.key(u.Id), data, uc.expiration).Err()
+	return uc.cmd.Set(ctx, uc.key(u.ID), data, uc.expiration).Err()
 }
 
 func (uc *userCache) key(id int64) string {

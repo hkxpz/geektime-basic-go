@@ -23,6 +23,7 @@ type UserDAO interface {
 	FindByID(ctx context.Context, id int64) (User, error)
 	FindByEmail(ctx context.Context, email string) (User, error)
 	FindByPhone(ctx context.Context, phone string) (User, error)
+	FindByWechat(ctx context.Context, openID string) (User, error)
 }
 
 type gormUserDAO struct {
@@ -37,8 +38,12 @@ type User struct {
 	Nickname sql.NullString `gorm:"size:30;comment:昵称"`
 	Birthday sql.NullInt64  `gorm:"comment:生日"`
 	AboutMe  sql.NullString `gorm:"type=varchar(1024);comment:个人介绍"`
-	CreateAt int64          `gorm:"comment:创建时间"`
-	UpdateAt int64          `gorm:"comment:更新时间"`
+
+	WechatOpenID  sql.NullString `gorm:"type=varchar(1024),unique"`
+	WechatUnionID sql.NullString `gorm:"type=varchar(1024)"`
+
+	CreateAt int64 `gorm:"comment:创建时间"`
+	UpdateAt int64 `gorm:"comment:更新时间"`
 }
 
 func NewUserDAO(db *gorm.DB) UserDAO {
@@ -79,5 +84,11 @@ func (ud *gormUserDAO) FindByID(ctx context.Context, id int64) (User, error) {
 func (ud *gormUserDAO) FindByPhone(ctx context.Context, phone string) (User, error) {
 	var u User
 	err := ud.db.WithContext(ctx).First(&u, "phone = ?", phone).Error
+	return u, err
+}
+
+func (ud *gormUserDAO) FindByWechat(ctx context.Context, openID string) (User, error) {
+	var u User
+	err := ud.db.WithContext(ctx).First(&u, "wechat_open_id = ?", openID).Error
 	return u, err
 }

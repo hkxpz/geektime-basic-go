@@ -11,6 +11,7 @@ import (
 	"geektime-basic-go/webook/internal/repository/dao"
 	"geektime-basic-go/webook/internal/service"
 	"geektime-basic-go/webook/internal/web"
+	"geektime-basic-go/webook/internal/web/jwt"
 	"geektime-basic-go/webook/ioc"
 	ginServer "geektime-basic-go/webook/ioc/gin"
 	"geektime-basic-go/webook/ioc/sms"
@@ -26,8 +27,6 @@ func InitWebServer() *gin.Engine {
 		// cache
 		redisCache.NewUserCache,
 		redisCache.NewCodeCache,
-		//ioc.InitMemory,
-		//memory.NewCodeCache,
 
 		repository.NewUserRepository,
 		repository.NewCodeRepository,
@@ -36,9 +35,12 @@ func InitWebServer() *gin.Engine {
 		sms.InitSmsSvc,
 		service.NewUserService,
 		service.NewSMSCodeService,
+		ioc.InitWechatService,
 
 		// handler
+		jwt.NewRedisHandler,
 		web.NewUserHandler,
+		web.NewOAuth2WechatHandler,
 
 		// middleware
 		ginServer.Middlewares,

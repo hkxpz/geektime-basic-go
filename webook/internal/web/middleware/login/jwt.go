@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 
-	"geektime-basic-go/webook/internal/web"
+	myjwt "geektime-basic-go/webook/internal/web/jwt"
 )
 
 type jwtLoginMiddlewareBuilder struct {
@@ -46,9 +46,9 @@ func (j *jwtLoginMiddlewareBuilder) Build() gin.HandlerFunc {
 		}
 
 		tokenStr := authSegments[1]
-		uc := web.UserClaims{}
+		uc := myjwt.UserClaims{}
 		token, err := jwt.ParseWithClaims(tokenStr, &uc, func(token *jwt.Token) (interface{}, error) {
-			return web.JWTKey, nil
+			return myjwt.AccessTokenKey, nil
 		})
 		if err != nil || !token.Valid {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
@@ -67,7 +67,7 @@ func (j *jwtLoginMiddlewareBuilder) Build() gin.HandlerFunc {
 
 		if expireTime.Sub(time.Now()) < 50*time.Second {
 			uc.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Minute))
-			newToken, err := token.SignedString(web.JWTKey)
+			newToken, err := token.SignedString(myjwt.AccessTokenKey)
 			if err != nil {
 				log.Println(err)
 			} else {

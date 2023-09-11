@@ -8,10 +8,10 @@ import (
 
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/service"
+	myjwt "geektime-basic-go/webook/internal/web/jwt"
 )
 
 const bizLogin = "login"
@@ -24,9 +24,10 @@ type UserHandler struct {
 	emailRegexExp    *regexp.Regexp
 	passwordRegexExp *regexp.Regexp
 	phoneRegexExp    *regexp.Regexp
+	myjwt.Handler
 }
 
-func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
+func NewUserHandler(svc service.UserService, codeSvc service.CodeService, jwtHandler myjwt.Handler) *UserHandler {
 	const (
 		emailRegexPattern  = `^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$`
 		passwdRegexPattern = `^^(?=.*[0-9])(?=.*[a-zA-Z])[0-9A-Za-z~!@#$%^&*._?]{8,15}$`
@@ -39,6 +40,7 @@ func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserH
 		emailRegexExp:    regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordRegexExp: regexp.MustCompile(passwdRegexPattern, regexp.None),
 		phoneRegexExp:    regexp.MustCompile(phoneRegexPattern, regexp.None),
+		Handler:          jwtHandler,
 	}
 }
 
@@ -122,31 +124,11 @@ func (uh *UserHandler) Login(ctx *gin.Context) {
 		return
 	}
 
-	if err = setToken(ctx, u.Id); err != nil {
+	if err = uh.SetLoginToken(ctx, u.ID); err != nil {
 		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "系统错误"})
 		return
 	}
 	ctx.JSON(http.StatusOK, Result{Msg: "登录成功"})
-}
-
-func setToken(ctx *gin.Context, uid int64) error {
-	token, err := newJWTToken(ctx, uid)
-	if err != nil {
-		return err
-	}
-	ctx.Header("x-jwt-token", token)
-	return nil
-}
-
-func newJWTToken(ctx *gin.Context, uid int64) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, UserClaims{
-		Id:        uid,
-		UserAgent: ctx.Request.UserAgent(),
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
-		},
-	})
-	return token.SignedString(JWTKey)
 }
 
 func (uh *UserHandler) Edit(ctx *gin.Context) {
@@ -178,8 +160,8 @@ func (uh *UserHandler) Edit(ctx *gin.Context) {
 		return
 	}
 
-	id := ctx.MustGet("user").(UserClaims).Id
-	err = uh.svc.Edit(ctx, domain.User{Id: id, Nickname: req.Nickname, Birthday: birthday, AboutMe: req.AboutMe})
+	id := ctx.MustGet("user").(myjwt.UserClaims).ID
+	err = uh.svc.Edit(ctx, domain.User{ID: id, Nickname: req.Nickname, Birthday: birthday, AboutMe: req.AboutMe})
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "系统错误"})
 		return
@@ -195,8 +177,8 @@ func (uh *UserHandler) Profile(ctx *gin.Context) {
 		Birthday string `json:"birthday"`
 		AboutMe  string `json:"aboutMe"`
 	}
-	uc := ctx.MustGet("user").(UserClaims)
-	user, err := uh.svc.Profile(ctx, uc.Id)
+	uc := ctx.MustGet("user").(myjwt.UserClaims)
+	user, err := uh.svc.Profile(ctx, uc.ID)
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "系统错误"})
 		return
@@ -264,7 +246,7 @@ func (uh *UserHandler) LoginSMS(ctx *gin.Context) {
 		return
 	}
 
-	if err = setToken(ctx, u.Id); err != nil {
+	if err = uh.SetLoginToken(ctx, u.ID); err != nil {
 		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "系统错误"})
 		return
 	}
