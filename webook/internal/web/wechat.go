@@ -55,11 +55,11 @@ func (oh *OAuth2WechatHandler) OAuth2URL(ctx *gin.Context) {
 }
 
 func (oh *OAuth2WechatHandler) Callback(ctx *gin.Context) {
-	//err := oh.verifyState(ctx)
-	//if err != nil {
-	//	ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "系统错误"})
-	//	return
-	//}
+	err := oh.verifyState(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "系统错误"})
+		return
+	}
 
 	code := ctx.Query("code")
 	info, err := oh.svc.VerifyCode(ctx, code)

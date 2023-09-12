@@ -1,4 +1,4 @@
-package gin
+package ioc
 
 import (
 	"strings"
@@ -9,6 +9,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"geektime-basic-go/webook/internal/web"
+	myjwt "geektime-basic-go/webook/internal/web/jwt"
 	"geektime-basic-go/webook/internal/web/middleware/login"
 	ginRatelimit "geektime-basic-go/webook/pkg/ginx/middleware/ratelimit"
 	"geektime-basic-go/webook/pkg/ratelimit"
@@ -22,11 +23,11 @@ func InitWebServer(uh *web.UserHandler, oh *web.OAuth2WechatHandler, fn []gin.Ha
 	return server
 }
 
-func Middlewares(cmd redis.Cmdable) []gin.HandlerFunc {
+func Middlewares(cmd redis.Cmdable, jwtHandler myjwt.Handler) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
 		corsHandler(),
-		login.NewJwtLoginMiddlewareBuilder().
-			SetIgnorePath("/users/signup", "/users/login").
+		login.NewJwtLoginMiddlewareBuilder(jwtHandler).
+			SetIgnorePath("/users/signup", "/users/login", "/users/refresh_token").
 			SetIgnorePath("/users/login_sms/code/send", "/users/login_sms").
 			SetIgnorePath("/oauth2/wechat/authurl", "/oauth2/wechat/callback").
 			Build(),

@@ -8,6 +8,7 @@ import (
 
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/service"
@@ -46,14 +47,16 @@ func NewUserHandler(svc service.UserService, codeSvc service.CodeService, jwtHan
 
 func (uh *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug := server.Group("/users")
+
+	ug.GET("/profile", uh.Profile)
+
 	ug.POST("/signup", uh.SignUp)
 	ug.POST("/login", uh.Login)
 	ug.POST("/edit", uh.Edit)
 	ug.POST("/login_sms/code/send", uh.SendSMSLoginCode)
 	ug.POST("/login_sms", uh.LoginSMS)
-
-	ug.GET("/profile", uh.Profile)
-
+	ug.POST("/refresh_token", uh.RefreshToken)
+	ug.POST("/logout", uh.Logout)
 }
 
 func (uh *UserHandler) SignUp(ctx *gin.Context) {
@@ -251,4 +254,42 @@ func (uh *UserHandler) LoginSMS(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, Result{Msg: "登录成功"})
+}
+
+func (uh *UserHandler) RefreshToken(ctx *gin.Context) {
+	tokenStr := uh.ExtractTokenString(ctx)
+	var rc myjwt.RefreshClaims
+	token, err := jwt.ParseWithClaims(tokenStr, &rc, func(token *jwt.Token) (interface{}, error) {
+		return myjwt.RefreshTokenKey, nil
+	})
+	if err != nil || token == nil || !token.Valid {
+		ctx.JSON(http.StatusUnauthorized, Result{Code: 4, Msg: "请登录"})
+		return
+	}
+	expireTime, err := rc.GetExpirationTime()
+	if err != nil || expireTime.Before(time.Now()) {
+		// 拿不到过期时间或者token过期
+		ctx.JSON(http.StatusUnauthorized, Result{Code: 4, Msg: "请登录"})
+		return
+	}
+	if err = uh.CheckSession(ctx, rc.SSID); err != nil {
+		// 系统错误或者用户已经主动退出登录了
+		ctx.JSON(http.StatusUnauthorized, Result{Code: 4, Msg: "请登录"})
+		return
+	}
+
+	if err = uh.SetJWTToken(ctx, rc.SSID, rc.ID); err != nil {
+		ctx.JSON(http.StatusUnauthorized, Result{Code: 4, Msg: "请登录"})
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{Msg: "刷新成功"})
+}
+
+func (uh *UserHandler) Logout(ctx *gin.Context) {
+	if err := uh.ClearToken(ctx); err != nil {
+		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "系统错误"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, Result{Msg: "OK"})
 }
