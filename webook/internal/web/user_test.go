@@ -10,6 +10,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
+	uuid "github.com/lithammer/shortuuid/v4"
+
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -386,7 +389,8 @@ func TestUserHandler_Edit(t *testing.T) {
 }
 
 func TestUserHandler_Profile(t *testing.T) {
-	now := time.Now()
+	now, err := time.Parse(time.DateOnly, "2023-09-11")
+	require.NoError(t, err)
 	userDomain := domain.User{
 		ID:       1,
 		Email:    "123@qq.com",
@@ -656,6 +660,175 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 			us, cs, jh := tc.mock(ctrl)
 			uh := NewUserHandler(us, cs, jh)
 			req := reqBuilder(t, http.MethodPost, "/users/login_sms", tc.body)
+			recorder := httptest.NewRecorder()
+
+			server := gin.New()
+			uh.RegisterRoutes(server)
+			server.ServeHTTP(recorder, req)
+
+			var webRes Result
+			err := json.NewDecoder(recorder.Body).Decode(&webRes)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantCode, recorder.Code)
+			assert.Equal(t, tc.wantRes, webRes)
+		})
+	}
+}
+
+func TestUserHandler_RefreshToken(t *testing.T) {
+	newRefreshToken := func(t *testing.T, expiration time.Duration, tokenKey []byte) (ssid, token string) {
+		ssid = uuid.New()
+		uc := myjwt.UserClaims{
+			ID:   1,
+			SSID: ssid,
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiration)),
+			},
+		}
+		token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, uc).SignedString(tokenKey)
+		require.NoError(t, err)
+		return ssid, token
+	}
+
+	testCases := []struct {
+		name     string
+		mock     func(ctrl *gomock.Controller) myjwt.Handler
+		wantCode int
+		wantRes  Result
+	}{
+		{
+			name: "刷新成功",
+			mock: func(ctrl *gomock.Controller) myjwt.Handler {
+				ssid, token := newRefreshToken(t, 30*time.Minute, myjwt.RefreshTokenKey)
+				hdl := jwtmocks.NewMockHandler(ctrl)
+				hdl.EXPECT().ExtractTokenString(gomock.Any()).Return(token)
+				hdl.EXPECT().CheckSession(gomock.Any(), ssid).Return(nil)
+				hdl.EXPECT().SetJWTToken(gomock.Any(), ssid, int64(1))
+				return hdl
+			},
+			wantCode: http.StatusOK,
+			wantRes:  Result{Msg: "刷新成功"},
+		},
+		{
+			name: "解析token失败",
+			mock: func(ctrl *gomock.Controller) myjwt.Handler {
+				_, token := newRefreshToken(t, 30*time.Minute, nil)
+				hdl := jwtmocks.NewMockHandler(ctrl)
+				hdl.EXPECT().ExtractTokenString(gomock.Any()).Return(token)
+				return hdl
+			},
+			wantCode: http.StatusUnauthorized,
+			wantRes:  Result{Code: 4, Msg: "请登录"},
+		},
+		{
+			name: "非法token",
+			mock: func(ctrl *gomock.Controller) myjwt.Handler {
+				_, token := newRefreshToken(t, 30*time.Minute, myjwt.AccessTokenKey)
+				hdl := jwtmocks.NewMockHandler(ctrl)
+				hdl.EXPECT().ExtractTokenString(gomock.Any()).Return(token)
+				return hdl
+			},
+			wantCode: http.StatusUnauthorized,
+			wantRes:  Result{Code: 4, Msg: "请登录"},
+		},
+		{
+			name: "token过期",
+			mock: func(ctrl *gomock.Controller) myjwt.Handler {
+				_, token := newRefreshToken(t, 1, myjwt.RefreshTokenKey)
+				hdl := jwtmocks.NewMockHandler(ctrl)
+				hdl.EXPECT().ExtractTokenString(gomock.Any()).Return(token)
+				return hdl
+			},
+			wantCode: http.StatusUnauthorized,
+			wantRes:  Result{Code: 4, Msg: "请登录"},
+		},
+		{
+			name: "用户主动退出",
+			mock: func(ctrl *gomock.Controller) myjwt.Handler {
+				ssid, token := newRefreshToken(t, 30*time.Minute, myjwt.RefreshTokenKey)
+				hdl := jwtmocks.NewMockHandler(ctrl)
+				hdl.EXPECT().ExtractTokenString(gomock.Any()).Return(token)
+				hdl.EXPECT().CheckSession(gomock.Any(), ssid).Return(errors.New("用户已经退出登录"))
+				return hdl
+			},
+			wantCode: http.StatusUnauthorized,
+			wantRes:  Result{Code: 4, Msg: "请登录"},
+		},
+		{
+			name: "设置token失败",
+			mock: func(ctrl *gomock.Controller) myjwt.Handler {
+				ssid, token := newRefreshToken(t, 30*time.Minute, myjwt.RefreshTokenKey)
+				hdl := jwtmocks.NewMockHandler(ctrl)
+				hdl.EXPECT().ExtractTokenString(gomock.Any()).Return(token)
+				hdl.EXPECT().CheckSession(gomock.Any(), ssid).Return(nil)
+				hdl.EXPECT().SetJWTToken(gomock.Any(), ssid, int64(1)).Return(errors.New("模拟设置token失败"))
+				return hdl
+			},
+			wantCode: http.StatusOK,
+			wantRes:  Result{Code: 5, Msg: "系统错误"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			uh := NewUserHandler(nil, nil, tc.mock(ctrl))
+
+			req := reqBuilder(t, http.MethodPost, "/users/refresh_token", nil)
+			recorder := httptest.NewRecorder()
+
+			server := gin.New()
+			uh.RegisterRoutes(server)
+			server.ServeHTTP(recorder, req)
+
+			var webRes Result
+			err := json.NewDecoder(recorder.Body).Decode(&webRes)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantCode, recorder.Code)
+			assert.Equal(t, tc.wantRes, webRes)
+		})
+	}
+}
+
+func TestUserHandler_Logout(t *testing.T) {
+	testCases := []struct {
+		name     string
+		mock     func(ctrl *gomock.Controller) myjwt.Handler
+		wantCode int
+		wantRes  Result
+	}{
+		{
+			name: "登出成功",
+			mock: func(ctrl *gomock.Controller) myjwt.Handler {
+				hdl := jwtmocks.NewMockHandler(ctrl)
+				hdl.EXPECT().ClearToken(gomock.Any()).Return(nil)
+				return hdl
+			},
+			wantCode: http.StatusOK,
+			wantRes:  Result{Msg: "OK"},
+		},
+		{
+			name: "登出失败",
+			mock: func(ctrl *gomock.Controller) myjwt.Handler {
+				hdl := jwtmocks.NewMockHandler(ctrl)
+				hdl.EXPECT().ClearToken(gomock.Any()).Return(errors.New("模拟失败"))
+				return hdl
+			},
+			wantCode: http.StatusOK,
+			wantRes:  Result{Code: 5, Msg: "系统错误"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			uh := NewUserHandler(nil, nil, tc.mock(ctrl))
+
+			req := reqBuilder(t, http.MethodPost, "/users/logout", nil)
 			recorder := httptest.NewRecorder()
 
 			server := gin.New()

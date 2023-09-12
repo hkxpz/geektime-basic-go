@@ -279,7 +279,7 @@ func (uh *UserHandler) RefreshToken(ctx *gin.Context) {
 	}
 
 	if err = uh.SetJWTToken(ctx, rc.SSID, rc.ID); err != nil {
-		ctx.JSON(http.StatusUnauthorized, Result{Code: 4, Msg: "请登录"})
+		ctx.JSON(http.StatusOK, Result{Code: 5, Msg: "系统错误"})
 		return
 	}
 	ctx.JSON(http.StatusOK, Result{Msg: "刷新成功"})
