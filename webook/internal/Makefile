@@ -1,5 +1,12 @@
 .PHONY:mockgen
-mockgen:mockgen.jwt mockgen.service mockgen.service.sms mockgen.repository mockgen.dao mockgen.cache mockgen.redis
+mockgen:mockgen.jwt \
+mockgen.service \
+mockgen.service.sms \
+mockgen.service.oauth2.wechat \
+mockgen.repository \
+mockgen.dao \
+mockgen.cache \
+mockgen.redis
 
 .PHONY:mockgen.jwt
 mockgen.jwt:
@@ -16,6 +23,11 @@ mockgen.service:
 mockgen.service.sms:
 	@rm -rf ./service/sms/mocks
 	@mockgen -source=./service/sms/types.go -package=mocks -destination=./service/sms/mocks/types.mock_gen.go
+
+.PHONY:mockgen.service.oauth2.wechat
+mockgen.service.oauth2.wechat:
+	@rm -rf ./service/oauth2/wechat/mocks
+	@mockgen -source=./service/oauth2/wechat/types.go -package=mocks -destination=./service/oauth2/wechat/mocks/types.mock_gen.go
 
 
 .PHONY:mockgen.repository
@@ -41,10 +53,11 @@ mockgen.redis:
 
 .PHONY:clear
 clear:
-	@rm -rf ./service/mocks \
+	@rm -rf ./web/jwt/mocks \
+	./service/mocks \
 	./service/sms/mocks \
+	./service/oauth2/wechat/mocks \
 	./repository/mocks \
 	./repository/dao/mocks \
 	./repository/cache/mocks \
 	./repository/cache/redis/mocks \
-	./web/jwt/mocks

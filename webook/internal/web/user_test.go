@@ -10,10 +10,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	uuid "github.com/lithammer/shortuuid/v4"
-
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -735,6 +734,23 @@ func TestUserHandler_RefreshToken(t *testing.T) {
 			name: "token过期",
 			mock: func(ctrl *gomock.Controller) myjwt.Handler {
 				_, token := newRefreshToken(t, 1, myjwt.RefreshTokenKey)
+				hdl := jwtmocks.NewMockHandler(ctrl)
+				hdl.EXPECT().ExtractTokenString(gomock.Any()).Return(token)
+				return hdl
+			},
+			wantCode: http.StatusUnauthorized,
+			wantRes:  Result{Code: 4, Msg: "请登录"},
+		},
+		{
+			name: "token不存在过期时间",
+			mock: func(ctrl *gomock.Controller) myjwt.Handler {
+				ssid := uuid.New()
+				uc := myjwt.UserClaims{
+					ID:   1,
+					SSID: ssid,
+				}
+				token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, uc).SignedString(myjwt.RefreshTokenKey)
+				require.NoError(t, err)
 				hdl := jwtmocks.NewMockHandler(ctrl)
 				hdl.EXPECT().ExtractTokenString(gomock.Any()).Return(token)
 				return hdl

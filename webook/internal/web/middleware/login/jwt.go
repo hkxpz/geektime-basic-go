@@ -2,7 +2,6 @@ package login
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/ecodeclub/ekit/set"
 	"github.com/gin-gonic/gin"
@@ -44,7 +43,7 @@ func (j *JwtMiddlewareBuilder) Build() gin.HandlerFunc {
 			return
 		}
 		expireTime, err := uc.GetExpirationTime()
-		if err != nil || expireTime.Before(time.Now()) {
+		if err != nil || expireTime == nil {
 			// 拿不到过期时间或者token过期
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 		}

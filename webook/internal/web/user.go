@@ -267,7 +267,7 @@ func (uh *UserHandler) RefreshToken(ctx *gin.Context) {
 		return
 	}
 	expireTime, err := rc.GetExpirationTime()
-	if err != nil || expireTime.Before(time.Now()) {
+	if err != nil || expireTime == nil {
 		// 拿不到过期时间或者token过期
 		ctx.JSON(http.StatusUnauthorized, Result{Code: 4, Msg: "请登录"})
 		return
