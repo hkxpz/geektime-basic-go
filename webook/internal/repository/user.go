@@ -90,7 +90,7 @@ func (ur *userRepository) entityToDomain(ue dao.User) domain.User {
 		birthday = time.UnixMilli(ue.Birthday.Int64)
 	}
 	return domain.User{
-		ID:       ue.Id,
+		ID:       ue.ID,
 		Email:    ue.Email.String,
 		Password: ue.Password,
 		Phone:    ue.Phone.String,
@@ -107,7 +107,7 @@ func (ur *userRepository) entityToDomain(ue dao.User) domain.User {
 
 func (ur *userRepository) domainToEntity(u domain.User) dao.User {
 	return dao.User{
-		Id:       u.ID,
+		ID:       u.ID,
 		Email:    sql.NullString{String: u.Email, Valid: u.Email != ""},
 		Phone:    sql.NullString{String: u.Phone, Valid: u.Phone != ""},
 		Birthday: sql.NullInt64{Int64: u.Birthday.UnixMilli(), Valid: !u.Birthday.IsZero()},

@@ -94,7 +94,7 @@ func TestGormUserDAO_Insert(t *testing.T) {
 func TestGormUserDAO_Update(t *testing.T) {
 	nowMs := time.Now().UnixMilli()
 	userDao := User{
-		Id:       1,
+		ID:       1,
 		Email:    sql.NullString{String: "123@qq.com", Valid: true},
 		Password: "$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi",
 		Phone:    sql.NullString{String: "13888888888", Valid: true},
@@ -152,7 +152,7 @@ func TestGormUserDAO_Update(t *testing.T) {
 func TestGormUserDAO_FindByID(t *testing.T) {
 	nowMs := time.Now().UnixMilli()
 	userDao := User{
-		Id:       1,
+		ID:       1,
 		Email:    sql.NullString{String: "123@qq.com", Valid: true},
 		Password: "$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi",
 		Phone:    sql.NullString{String: "13888888888", Valid: true},
@@ -229,7 +229,7 @@ func TestGormUserDAO_FindByID(t *testing.T) {
 func TestGormUserDAO_FindByEmail(t *testing.T) {
 	nowMs := time.Now().UnixMilli()
 	userDao := User{
-		Id:       1,
+		ID:       1,
 		Email:    sql.NullString{String: "123@qq.com", Valid: true},
 		Password: "$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi",
 		Phone:    sql.NullString{String: "13888888888", Valid: true},
@@ -306,7 +306,7 @@ func TestGormUserDAO_FindByEmail(t *testing.T) {
 func TestGormUserDAO_FindByPhone(t *testing.T) {
 	nowMs := time.Now().UnixMilli()
 	userDao := User{
-		Id:       1,
+		ID:       1,
 		Email:    sql.NullString{String: "123@qq.com", Valid: true},
 		Password: "$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi",
 		Phone:    sql.NullString{String: "13888888888", Valid: true},

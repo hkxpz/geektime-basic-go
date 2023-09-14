@@ -33,8 +33,9 @@ mockgen.service.oauth2.wechat:
 .PHONY:mockgen.repository
 mockgen.repository:
 	@rm -rf ./repository/mocks
-	@mockgen -source=./repository/user.go -package=mocks -destination=./repository/mocks/user.mock_gen.go
-	@mockgen -source=./repository/code.go -package=mocks -destination=./repository/mocks/code.mock_gen.go
+	@mockgen -source=./repository/user.go -package=mocks -destination=./repository/mocks/user_mock_gen.go
+	@mockgen -source=./repository/code.go -package=mocks -destination=./repository/mocks/code_mock_gen.go
+	@mockgen -source=./repository/sms.go -package=mocks -destination=./repository/mocks/sms_mock_gen.go
 
 .PHONY:mockgen.dao
 mockgen.dao:

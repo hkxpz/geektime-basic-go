@@ -82,7 +82,7 @@ func TestUserRepository_Update(t *testing.T) {
 		Birthday: now,
 	}
 	userDao := dao.User{
-		Id:       1,
+		ID:       1,
 		Email:    sql.NullString{String: "123@qq.com", Valid: true},
 		Password: "$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi",
 		Phone:    sql.NullString{String: "13888888888", Valid: true},
@@ -159,7 +159,7 @@ func TestUserRepository_FindByID(t *testing.T) {
 		CreateAt: now,
 	}
 	userDao := dao.User{
-		Id:       1,
+		ID:       1,
 		Email:    sql.NullString{String: "123@qq.com", Valid: true},
 		Password: "$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi",
 		Phone:    sql.NullString{String: "13888888888", Valid: true},
@@ -253,7 +253,7 @@ func TestUserRepository_FindByEmail(t *testing.T) {
 		CreateAt: now,
 	}
 	userDao := dao.User{
-		Id:       1,
+		ID:       1,
 		Email:    sql.NullString{String: "123@qq.com", Valid: true},
 		Password: "$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi",
 		Phone:    sql.NullString{String: "13888888888", Valid: true},
@@ -321,7 +321,7 @@ func TestUserRepository_FindByPhone(t *testing.T) {
 		CreateAt: now,
 	}
 	userDao := dao.User{
-		Id:       1,
+		ID:       1,
 		Email:    sql.NullString{String: "123@qq.com", Valid: true},
 		Password: "$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi",
 		Phone:    sql.NullString{String: "13888888888", Valid: true},

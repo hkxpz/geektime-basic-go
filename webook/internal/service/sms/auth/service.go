@@ -13,7 +13,7 @@ type service struct {
 	key []byte
 }
 
-func newService(svc sms.Service, key []byte) sms.Service {
+func NewService(svc sms.Service, key []byte) sms.Service {
 	return &service{svc: svc, key: key}
 }
 

@@ -7,16 +7,18 @@ import (
 	"geektime-basic-go/webook/internal/repository/dao"
 )
 
-type Repository interface {
+type SMSRepository interface {
 	Store(ctx context.Context, msg domain.SMS) error
-	Load(ctx context.Context, Id int64) (dao.SMS, error)
+	FindRetryWithMaxRetry(ctx context.Context, maxRetry int64, status int64) ([]dao.SMS, error)
+	UpdateStatus(ctx context.Context, IDs []int64, status int64) error
+	UpdateRetryCnt(ctx context.Context, IDs []int64) error
 }
 
 type repository struct {
 	dao dao.SMSDao
 }
 
-func NewRepository(dao dao.SMSDao) Repository {
+func NewRepository(dao dao.SMSDao) SMSRepository {
 	return &repository{dao: dao}
 }
 
@@ -24,6 +26,14 @@ func (r *repository) Store(ctx context.Context, msg domain.SMS) error {
 	return r.dao.Insert(ctx, dao.SMS{})
 }
 
-func (r *repository) Load(ctx context.Context, Id int64) (dao.SMS, error) {
-	return r.dao.FindByID(ctx, Id)
+func (r *repository) FindRetryWithMaxRetry(ctx context.Context, maxRetry int64, status int64) ([]dao.SMS, error) {
+	return r.dao.FindByMaxRetryAndStatus(ctx, maxRetry, status)
+}
+
+func (r *repository) UpdateStatus(ctx context.Context, IDs []int64, status int64) error {
+	return r.dao.UpdateStatus(ctx, IDs)
+}
+
+func (r *repository) UpdateRetryCnt(ctx context.Context, IDs []int64) error {
+	return r.dao.UpdateRetryCnt(ctx, IDs)
 }

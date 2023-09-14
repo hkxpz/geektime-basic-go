@@ -161,7 +161,7 @@ func TestUserHandler_Login(t *testing.T) {
 
 		mock     func(ctrl *gomock.Controller) (service.UserService, myjwt.Handler)
 		body     io.Reader
-		Id       int64
+		ID       int64
 		useToken bool
 
 		wantCode int
@@ -177,7 +177,7 @@ func TestUserHandler_Login(t *testing.T) {
 				return us, jh
 			},
 			body:     bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123"}`)),
-			Id:       1,
+			ID:       1,
 			useToken: true,
 			wantCode: http.StatusOK,
 			wantRes:  Result{Code: 0, Msg: "登录成功"},
@@ -192,7 +192,7 @@ func TestUserHandler_Login(t *testing.T) {
 				return us, jh
 			},
 			body:     bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123"}`)),
-			Id:       1,
+			ID:       1,
 			useToken: true,
 			wantCode: http.StatusOK,
 			wantRes:  Result{Code: 5, Msg: "系统错误"},
@@ -280,7 +280,7 @@ func TestUserHandler_Edit(t *testing.T) {
 
 		mock func(ctrl *gomock.Controller) service.UserService
 		body io.Reader
-		Id   int64
+		ID   int64
 
 		wantCode int
 		wantRes  Result
@@ -292,7 +292,7 @@ func TestUserHandler_Edit(t *testing.T) {
 				us.EXPECT().Edit(gomock.Any(), userDomain).Return(nil)
 				return us
 			},
-			Id:       1,
+			ID:       1,
 			body:     bytes.NewBuffer([]byte(`{"nickname":"泰裤辣","birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusOK,
 			wantRes:  Result{Code: 0, Msg: "OK"},
@@ -302,7 +302,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) service.UserService {
 				return nil
 			},
-			Id:       1,
+			ID:       1,
 			body:     bytes.NewBuffer([]byte(`{,"nickname":"泰裤辣","birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusBadRequest,
 			wantRes:  Result{Code: 5, Msg: "系统错误"},
@@ -312,7 +312,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) service.UserService {
 				return nil
 			},
-			Id:       1,
+			ID:       1,
 			body:     bytes.NewBuffer([]byte(`{"birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusOK,
 			wantRes:  Result{Code: 4, Msg: "昵称不能为空"},
@@ -322,7 +322,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) service.UserService {
 				return nil
 			},
-			Id:       1,
+			ID:       1,
 			body:     bytes.NewBuffer([]byte(`{"nickname":"泰裤辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣","birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusOK,
 			wantRes:  Result{Code: 4, Msg: "昵称过长"},
@@ -332,7 +332,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) service.UserService {
 				return nil
 			},
-			Id:       1,
+			ID:       1,
 			body:     bytes.NewBuffer([]byte(`{"nickname":"泰裤辣","birthday":"2000-01-01","aboutMe":"泰裤辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣辣"}`)),
 			wantCode: http.StatusOK,
 			wantRes:  Result{Code: 4, Msg: "关于我过长"},
@@ -342,7 +342,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) service.UserService {
 				return nil
 			},
-			Id:       1,
+			ID:       1,
 			body:     bytes.NewBuffer([]byte(`{"nickname":"泰裤辣","birthday":"2000-001-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusOK,
 			wantRes:  Result{Code: 4, Msg: "日期格式不对"},
@@ -354,7 +354,7 @@ func TestUserHandler_Edit(t *testing.T) {
 				us.EXPECT().Edit(gomock.Any(), userDomain).Return(errors.New("模拟系统错误"))
 				return us
 			},
-			Id:       1,
+			ID:       1,
 			body:     bytes.NewBuffer([]byte(`{"nickname":"泰裤辣","birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusOK,
 			wantRes:  Result{Code: 5, Msg: "系统错误"},
@@ -373,7 +373,7 @@ func TestUserHandler_Edit(t *testing.T) {
 
 			server := gin.New()
 			server.Use(func(ctx *gin.Context) {
-				ctx.Set("user", myjwt.UserClaims{ID: tc.Id})
+				ctx.Set("user", myjwt.UserClaims{ID: tc.ID})
 			})
 			uh.RegisterRoutes(server)
 			server.ServeHTTP(recorder, req)
@@ -405,7 +405,7 @@ func TestUserHandler_Profile(t *testing.T) {
 
 		mock func(ctrl *gomock.Controller) service.UserService
 		body io.Reader
-		Id   int64
+		ID   int64
 
 		wantCode int
 		wantRes  Result
@@ -417,7 +417,7 @@ func TestUserHandler_Profile(t *testing.T) {
 				us.EXPECT().Profile(gomock.Any(), int64(1)).Return(userDomain, nil)
 				return us
 			},
-			Id:       1,
+			ID:       1,
 			wantCode: http.StatusOK,
 			wantRes: Result{Code: 0, Msg: "OK", Data: map[string]interface{}{
 				"aboutMe":  "泰裤辣",
@@ -434,7 +434,7 @@ func TestUserHandler_Profile(t *testing.T) {
 				us.EXPECT().Profile(gomock.Any(), int64(1)).Return(domain.User{}, errors.New("模拟系统错误"))
 				return us
 			},
-			Id:       1,
+			ID:       1,
 			wantCode: http.StatusOK,
 			wantRes:  Result{Code: 5, Msg: "系统错误"},
 		},
@@ -452,7 +452,7 @@ func TestUserHandler_Profile(t *testing.T) {
 
 			server := gin.New()
 			server.Use(func(ctx *gin.Context) {
-				ctx.Set("user", myjwt.UserClaims{ID: tc.Id})
+				ctx.Set("user", myjwt.UserClaims{ID: tc.ID})
 			})
 			uh.RegisterRoutes(server)
 			server.ServeHTTP(recorder, req)
