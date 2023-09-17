@@ -16,6 +16,7 @@ import (
 )
 
 func InitWebServer(uh *web.UserHandler, oh *web.OAuth2WechatHandler, fn []gin.HandlerFunc) *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
 	server := gin.Default()
 	server.Use(fn...)
 	uh.RegisterRoutes(server)
