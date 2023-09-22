@@ -5,3 +5,7 @@ db:
 redis:
   addr: "webook-redis:6380"
   db: 0
+
+log:
+  level: debug
+  encoding: json

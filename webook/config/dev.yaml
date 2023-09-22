@@ -5,3 +5,7 @@ db:
 redis:
   addr: "localhost:6379"
   db: 0
+
+log:
+  level: debug
+  encoding: json

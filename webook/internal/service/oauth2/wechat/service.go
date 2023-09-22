@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"geektime-basic-go/webook/internal/domain"
+	"geektime-basic-go/webook/pkg/logger"
 )
 
 const authURLPattern = "https://open.weixin.qq.com/connect/qrconnect?appid=%s&redirect_uri=%s&response_type=code&scope=snsapi_login&state=%s#wechat_redire"
@@ -19,10 +20,11 @@ type service struct {
 	appID     string
 	appSecret string
 	client    *http.Client
+	logger    logger.Logger
 }
 
-func NewService(appID string, appSecret string) Service {
-	return &service{appID: appID, appSecret: appSecret, client: http.DefaultClient}
+func NewService(appID string, appSecret string, logger logger.Logger) Service {
+	return &service{appID: appID, appSecret: appSecret, logger: logger, client: http.DefaultClient}
 }
 
 func (s *service) AuthURL(ctx context.Context, state string) (string, error) {
