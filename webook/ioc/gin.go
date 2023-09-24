@@ -11,28 +11,31 @@ import (
 	"geektime-basic-go/webook/internal/web"
 	myjwt "geektime-basic-go/webook/internal/web/jwt"
 	"geektime-basic-go/webook/internal/web/middleware/login"
+	"geektime-basic-go/webook/pkg/ginx/middleware/accesslog"
 	ginRatelimit "geektime-basic-go/webook/pkg/ginx/middleware/ratelimit"
+	"geektime-basic-go/webook/pkg/logger"
 	"geektime-basic-go/webook/pkg/ratelimit"
 )
 
-func InitWebServer(uh *web.UserHandler, oh *web.OAuth2WechatHandler, fn []gin.HandlerFunc) *gin.Engine {
-	gin.SetMode(gin.ReleaseMode)
+func InitWebServer(uh *web.UserHandler, ah *web.ArticleHandler, oh *web.OAuth2WechatHandler, fn []gin.HandlerFunc) *gin.Engine {
 	server := gin.Default()
 	server.Use(fn...)
 	uh.RegisterRoutes(server)
+	ah.RegisterRoutes(server)
 	oh.RegisterRoutes(server)
 	return server
 }
 
-func Middlewares(cmd redis.Cmdable, jwtHandler myjwt.Handler) []gin.HandlerFunc {
+func Middlewares(cmd redis.Cmdable, jwtHandler myjwt.Handler, l logger.Logger) []gin.HandlerFunc {
 	return []gin.HandlerFunc{
+		ginRatelimit.NewBuilder(ratelimit.NewRedisSlideWindowLimiter(cmd, time.Minute, 100)).Build(),
 		corsHandler(),
 		login.NewJwtLoginMiddlewareBuilder(jwtHandler).
 			SetIgnorePath("/users/signup", "/users/login", "/users/refresh_token").
 			SetIgnorePath("/users/login_sms/code/send", "/users/login_sms").
 			SetIgnorePath("/oauth2/wechat/authurl", "/oauth2/wechat/callback").
 			Build(),
-		ginRatelimit.NewBuilder(ratelimit.NewRedisSlideWindowLimiter(cmd, time.Minute, 100)).Build(),
+		accesslog.NewBuilder(accesslog.DefaultLogFunc(l)).AllowReqBody().AllowRespBody().Build(),
 	}
 }
 

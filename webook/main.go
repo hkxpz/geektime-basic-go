@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	initViper()
+	InitViperRemote()
 	server := InitWebServer()
 	server.GET("/PING", func(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "PONG")
@@ -21,7 +21,7 @@ func main() {
 }
 
 func initViper() {
-	cfile := pflag.String("config", "config/config.yaml", "配置文件路径")
+	cfile := pflag.String("config", "/etc/webook/config.yaml", "配置文件路径")
 	pflag.Parse()
 	viper.SetConfigFile(*cfile)
 	if err := viper.ReadInConfig(); err != nil {

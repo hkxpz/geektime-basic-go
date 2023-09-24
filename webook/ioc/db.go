@@ -4,18 +4,26 @@ import (
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	glogger "gorm.io/gorm/logger"
 
 	"geektime-basic-go/webook/internal/repository/dao"
+	"geektime-basic-go/webook/pkg/logger"
 )
 
-func InitDB() *gorm.DB {
+func InitDB(l logger.Logger) *gorm.DB {
 	cfg := struct {
 		DSN string `yaml:"dsn"`
 	}{}
 	if err := viper.UnmarshalKey("db.mysql", &cfg); err != nil {
 		panic(err)
 	}
-	db, err := gorm.Open(mysql.Open(cfg.DSN))
+	db, err := gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{
+		Logger: glogger.New(gormLoggerFunc(l.Info), glogger.Config{
+			SlowThreshold:        10,
+			LogLevel:             glogger.Info,
+			ParameterizedQueries: true,
+		}),
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -25,4 +33,10 @@ func InitDB() *gorm.DB {
 	}
 
 	return db
+}
+
+type gormLoggerFunc func(msg string, fields ...any)
+
+func (g gormLoggerFunc) Printf(msg string, args ...any) {
+	g(msg, logger.Field{Key: "args", Value: args})
 }

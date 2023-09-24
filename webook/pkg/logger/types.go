@@ -8,8 +8,3 @@ type Logger interface {
 	Panic(msg string, args ...any)
 	Fatal(msg string, args ...any)
 }
-
-type Field struct {
-	Key   string
-	Value any
-}
