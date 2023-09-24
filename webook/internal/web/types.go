@@ -1,6 +1,8 @@
 package web
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+)
 
 type Result struct {
 	Code int    `json:"code"`
@@ -10,4 +12,8 @@ type Result struct {
 
 type handler interface {
 	RegisterRoutes(s *gin.Engine)
+}
+
+func InternalServerError() Result {
+	return Result{Code: 5, Msg: "系统错误"}
 }

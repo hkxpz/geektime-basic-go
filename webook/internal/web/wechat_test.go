@@ -123,7 +123,7 @@ func TestOAuth2WechatHandler_Callback(t *testing.T) {
 			},
 			addCookie: func(req *http.Request) {},
 			wantCode:  http.StatusOK,
-			wantRse:   Result{Code: 5, Msg: "系统错误"},
+			wantRse:   InternalServerError(),
 		},
 		{
 			name: "非法cookie token",
@@ -134,7 +134,7 @@ func TestOAuth2WechatHandler_Callback(t *testing.T) {
 				req.AddCookie(newCookie(newToken(ssid, myjwt.AccessTokenKey)))
 			},
 			wantCode: http.StatusOK,
-			wantRse:  Result{Code: 5, Msg: "系统错误"},
+			wantRse:  InternalServerError(),
 		},
 		{
 			name: "state被篡改",
@@ -145,7 +145,7 @@ func TestOAuth2WechatHandler_Callback(t *testing.T) {
 				req.AddCookie(newCookie(newToken(uuid.New(), stateTokenKey)))
 			},
 			wantCode: http.StatusOK,
-			wantRse:  Result{Code: 5, Msg: "系统错误"},
+			wantRse:  InternalServerError(),
 		},
 		{
 			name: "授权码验证失败",
@@ -158,7 +158,7 @@ func TestOAuth2WechatHandler_Callback(t *testing.T) {
 				req.AddCookie(newCookie(newToken(ssid, stateTokenKey)))
 			},
 			wantCode: http.StatusOK,
-			wantRse:  Result{Code: 5, Msg: "系统错误"},
+			wantRse:  InternalServerError(),
 		},
 		{
 			name: "查找/创建用户失败",
@@ -173,7 +173,7 @@ func TestOAuth2WechatHandler_Callback(t *testing.T) {
 				req.AddCookie(newCookie(newToken(ssid, stateTokenKey)))
 			},
 			wantCode: http.StatusOK,
-			wantRse:  Result{Code: 5, Msg: "系统错误"},
+			wantRse:  InternalServerError(),
 		},
 		{
 			name: "设置token失败",
@@ -190,7 +190,7 @@ func TestOAuth2WechatHandler_Callback(t *testing.T) {
 				req.AddCookie(newCookie(newToken(ssid, stateTokenKey)))
 			},
 			wantCode: http.StatusOK,
-			wantRse:  Result{Code: 5, Msg: "系统错误"},
+			wantRse:  InternalServerError(),
 		},
 	}
 

@@ -70,7 +70,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123","confirmPassword":"hello@world123",}`)),
 			wantCode: http.StatusBadRequest,
-			wantRes:  Result{Code: 5, Msg: "系统错误"},
+			wantRes:  InternalServerError(),
 		},
 		{
 			name: "邮箱格式不正确",
@@ -195,7 +195,7 @@ func TestUserHandler_Login(t *testing.T) {
 			ID:       1,
 			useToken: true,
 			wantCode: http.StatusOK,
-			wantRes:  Result{Code: 5, Msg: "系统错误"},
+			wantRes:  InternalServerError(),
 		},
 		{
 			name: "解析输入失败",
@@ -204,7 +204,7 @@ func TestUserHandler_Login(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123",}`)),
 			wantCode: http.StatusBadRequest,
-			wantRes:  Result{Code: 5, Msg: "系统错误"},
+			wantRes:  InternalServerError(),
 		},
 		{
 			name: "用户名或密码不正确",
@@ -228,7 +228,7 @@ func TestUserHandler_Login(t *testing.T) {
 			body: bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123"}`)),
 
 			wantCode: http.StatusOK,
-			wantRes:  Result{Code: 5, Msg: "系统错误"},
+			wantRes:  InternalServerError(),
 		},
 	}
 
@@ -305,7 +305,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			ID:       1,
 			body:     bytes.NewBuffer([]byte(`{,"nickname":"泰裤辣","birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusBadRequest,
-			wantRes:  Result{Code: 5, Msg: "系统错误"},
+			wantRes:  InternalServerError(),
 		},
 		{
 			name: "空昵称",
@@ -357,7 +357,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			ID:       1,
 			body:     bytes.NewBuffer([]byte(`{"nickname":"泰裤辣","birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusOK,
-			wantRes:  Result{Code: 5, Msg: "系统错误"},
+			wantRes:  InternalServerError(),
 		},
 	}
 
@@ -436,7 +436,7 @@ func TestUserHandler_Profile(t *testing.T) {
 			},
 			ID:       1,
 			wantCode: http.StatusOK,
-			wantRes:  Result{Code: 5, Msg: "系统错误"},
+			wantRes:  InternalServerError(),
 		},
 	}
 
@@ -495,7 +495,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone""13888888888"}`)),
 			wantCode: http.StatusBadRequest,
-			wantRes:  Result{Code: 5, Msg: "系统错误"},
+			wantRes:  InternalServerError(),
 		},
 		{
 			name: "手机号码错误",
@@ -526,7 +526,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone":"13888888888"}`)),
 			wantCode: http.StatusOK,
-			wantRes:  Result{Code: 5, Msg: "系统错误"},
+			wantRes:  InternalServerError(),
 		},
 	}
 
@@ -603,7 +603,7 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone":"13888888888","code":"123456"}`)),
 			wantCode: http.StatusOK,
-			wantRes:  Result{Code: 5, Msg: "系统错误"},
+			wantRes:  InternalServerError(),
 		},
 		{
 			name: "解析输入失败",
@@ -612,7 +612,7 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone":"13888888888""code":"123456"}`)),
 			wantCode: http.StatusBadRequest,
-			wantRes:  Result{Code: 5, Msg: "系统错误"},
+			wantRes:  InternalServerError(),
 		},
 		{
 			name: "验证码校验失败",
@@ -623,7 +623,7 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone":"13888888888","code":"123456"}`)),
 			wantCode: http.StatusOK,
-			wantRes:  Result{Code: 5, Msg: "系统错误"},
+			wantRes:  InternalServerError(),
 		},
 		{
 			name: "验证码错误",
@@ -647,7 +647,7 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone":"13888888888","code":"123456"}`)),
 			wantCode: http.StatusOK,
-			wantRes:  Result{Code: 5, Msg: "系统错误"},
+			wantRes:  InternalServerError(),
 		},
 	}
 
@@ -781,7 +781,7 @@ func TestUserHandler_RefreshToken(t *testing.T) {
 				return hdl
 			},
 			wantCode: http.StatusOK,
-			wantRes:  Result{Code: 5, Msg: "系统错误"},
+			wantRes:  InternalServerError(),
 		},
 	}
 
@@ -833,7 +833,7 @@ func TestUserHandler_Logout(t *testing.T) {
 				return hdl
 			},
 			wantCode: http.StatusOK,
-			wantRes:  Result{Code: 5, Msg: "系统错误"},
+			wantRes:  InternalServerError(),
 		},
 	}
 
