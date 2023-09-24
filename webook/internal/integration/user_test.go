@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -12,27 +11,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"geektime-basic-go/webook/internal/integration/startup"
 	"geektime-basic-go/webook/internal/web"
 	"geektime-basic-go/webook/ioc"
 )
 
-func reqBuilder(t *testing.T, method, url string, body []byte, headers ...[]string) *http.Request {
-	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
-	require.NoError(t, err)
-
-	for _, header := range headers {
-		req.Header.Set(header[0], header[1])
-	}
-
-	if len(headers) < 1 {
-		req.Header.Set("Content-Type", "application/json")
-	}
-	return req
-}
-
 func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 	const sendSMSCodeUrl = "/users/login_sms/code/send"
-	server := InitWebServer()
+	server := startup.InitWebServer()
 	rdb := ioc.InitRedis()
 	testCases := []struct {
 		name string
@@ -111,7 +97,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			},
 			body:       []byte(`{"phone": "13888888888"}`),
 			wantCode:   http.StatusOK,
-			wantResult: web.Result{Code: 5, Msg: "系统错误"},
+			wantResult: web.InternalServerError(),
 		},
 	}
 
