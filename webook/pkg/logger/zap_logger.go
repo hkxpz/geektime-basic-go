@@ -1,6 +1,10 @@
 package logger
 
-import "go.uber.org/zap"
+import (
+	"strings"
+
+	"go.uber.org/zap"
+)
 
 type ZapLogger struct {
 	logger *zap.Logger
@@ -42,4 +46,23 @@ func (z *ZapLogger) toArgs(args []any) []zap.Field {
 	}
 
 	return res
+}
+
+func ToZapLevel(level string) zap.AtomicLevel {
+	switch strings.ToLower(level) {
+	default:
+		return zap.NewAtomicLevelAt(zap.DebugLevel)
+	case "debug":
+		return zap.NewAtomicLevelAt(zap.DebugLevel)
+	case "info":
+		return zap.NewAtomicLevelAt(zap.InfoLevel)
+	case "warn":
+		return zap.NewAtomicLevelAt(zap.WarnLevel)
+	case "error":
+		return zap.NewAtomicLevelAt(zap.ErrorLevel)
+	case "panic":
+		return zap.NewAtomicLevelAt(zap.PanicLevel)
+	case "fatal":
+		return zap.NewAtomicLevelAt(zap.FatalLevel)
+	}
 }

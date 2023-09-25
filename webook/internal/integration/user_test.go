@@ -13,6 +13,7 @@ import (
 
 	"geektime-basic-go/webook/internal/integration/startup"
 	"geektime-basic-go/webook/internal/web"
+	"geektime-basic-go/webook/internal/web/middleware/handlefunc"
 	"geektime-basic-go/webook/ioc"
 )
 
@@ -28,7 +29,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 		body   []byte
 
 		wantCode   int
-		wantResult web.Result
+		wantResult handlefunc.Response
 	}{
 		{
 			name:   "发送成功",
@@ -47,7 +48,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			},
 			body:       []byte(`{"phone": "13888888888"}`),
 			wantCode:   http.StatusOK,
-			wantResult: web.Result{Msg: "发送成功"},
+			wantResult: handlefunc.Response{Msg: "发送成功"},
 		},
 		{
 			name:       "空手机号",
@@ -55,7 +56,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			after:      func(t *testing.T) {},
 			body:       []byte(`{"phone": ""}`),
 			wantCode:   http.StatusOK,
-			wantResult: web.Result{Code: 4, Msg: "手机号码错误"},
+			wantResult: handlefunc.Response{Code: 4, Msg: "手机号码错误"},
 		},
 		{
 			name: "发送太频繁",
@@ -76,7 +77,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			},
 			body:       []byte(`{"phone": "13888888888"}`),
 			wantCode:   http.StatusOK,
-			wantResult: web.Result{Code: 4, Msg: "短信发送太频繁，请稍后再试"},
+			wantResult: handlefunc.Response{Code: 4, Msg: "短信发送太频繁，请稍后再试"},
 		},
 		{
 			name: "未知错误",
@@ -109,7 +110,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			recorder := httptest.NewRecorder()
 			server.ServeHTTP(recorder, req)
 
-			var webRes web.Result
+			var webRes handlefunc.Response
 			err := json.NewDecoder(recorder.Body).Decode(&webRes)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.wantCode, recorder.Code)

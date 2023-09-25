@@ -17,7 +17,7 @@ import (
 	"geektime-basic-go/webook/ioc/sms"
 )
 
-var thirdProvider = wire.NewSet(ioc.InitRedis, ioc.InitDB, ioc.InitLogger)
+var thirdProvider = wire.NewSet(ioc.InitRedis, ioc.InitDB, ioc.InitZapLogger)
 
 var userSvcProvider = wire.NewSet(
 	dao.NewUserDAO,
@@ -44,7 +44,7 @@ func InitWebServer() *gin.Engine {
 		// svc
 		sms.InitSmsSvc,
 		service.NewSMSCodeService,
-		ioc.InitWechatService,
+		ioc.InitLocalWechatService,
 
 		// handler
 		jwt.NewRedisHandler,

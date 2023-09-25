@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	smsMocks "geektime-basic-go/webook/internal/service/sms/mocks"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,6 +12,7 @@ import (
 	"geektime-basic-go/webook/internal/repository"
 	"geektime-basic-go/webook/internal/repository/mocks"
 	"geektime-basic-go/webook/internal/service/sms"
+	smsMocks "geektime-basic-go/webook/internal/service/sms/mocks"
 )
 
 func TestSmsCodeService_Send(t *testing.T) {

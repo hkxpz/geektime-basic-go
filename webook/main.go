@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	InitViperRemote()
+	initViper()
 	server := InitWebServer()
 	server.GET("/PING", func(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "PONG")

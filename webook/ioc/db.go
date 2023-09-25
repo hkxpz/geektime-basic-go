@@ -1,6 +1,8 @@
 package ioc
 
 import (
+	"time"
+
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -19,7 +21,7 @@ func InitDB(l logger.Logger) *gorm.DB {
 	}
 	db, err := gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{
 		Logger: glogger.New(gormLoggerFunc(l.Info), glogger.Config{
-			SlowThreshold:        10,
+			SlowThreshold:        50 * time.Millisecond,
 			LogLevel:             glogger.Info,
 			ParameterizedQueries: true,
 		}),

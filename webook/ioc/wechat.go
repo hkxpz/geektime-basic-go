@@ -18,3 +18,7 @@ func InitWechatService(logger logger.Logger) wechat.Service {
 	}
 	return wechat.NewService(appId, appKey, logger)
 }
+
+func InitLocalWechatService(logger logger.Logger) wechat.Service {
+	return wechat.NewService("", "", logger)
+}

@@ -2,6 +2,8 @@ package web
 
 import (
 	"github.com/gin-gonic/gin"
+
+	"geektime-basic-go/webook/internal/web/middleware/handlefunc"
 )
 
 type Result struct {
@@ -14,6 +16,6 @@ type handler interface {
 	RegisterRoutes(s *gin.Engine)
 }
 
-func InternalServerError() Result {
-	return Result{Code: 5, Msg: "系统错误"}
+func InternalServerError() handlefunc.Response {
+	return handlefunc.Response{Code: 5, Msg: "系统错误"}
 }

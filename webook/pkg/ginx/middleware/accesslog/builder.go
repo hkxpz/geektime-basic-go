@@ -61,9 +61,9 @@ func (b *Builder) Build() gin.HandlerFunc {
 			ctx.Request.Body = io.NopCloser(bytes.NewBuffer(rb))
 
 			if len(rb) > b.mxReqBodyLength {
-				log.RespBody = rb[:b.mxReqBodyLength]
+				log.RespBody = string(rb[:b.mxReqBodyLength])
 			}
-			log.ReqBody = rb
+			log.ReqBody = string(rb)
 		}
 
 		if b.allowRespBody {
@@ -84,10 +84,10 @@ func (b *Builder) Build() gin.HandlerFunc {
 type AccessLog struct {
 	Method     string `json:"method"`
 	Path       string `json:"path"`
-	ReqBody    []byte `json:"req_body"`
+	ReqBody    string `json:"req_body"`
 	Duration   string `json:"duration"`
 	StatusCode int    `json:"status_code"`
-	RespBody   []byte `json:"resp_body"`
+	RespBody   string `json:"resp_body"`
 }
 
 type respWriter struct {
@@ -101,12 +101,12 @@ func (r respWriter) WriteHeader(statusCode int) {
 }
 
 func (r respWriter) Write(data []byte) (int, error) {
-	r.log.RespBody = data
+	r.log.RespBody = string(data)
 	return r.ResponseWriter.Write(data)
 }
 
 func (r respWriter) WriteString(data string) (int, error) {
-	r.log.RespBody = []byte(data)
+	r.log.RespBody = data
 	return r.ResponseWriter.WriteString(data)
 }
 

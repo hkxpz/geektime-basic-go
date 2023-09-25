@@ -19,7 +19,7 @@ import (
 
 func InitWebServer() *gin.Engine {
 	wire.Build(
-		ioc.InitDB, ioc.InitRedis, ioc.InitLogger,
+		ioc.InitDB, ioc.InitRedis, ioc.InitZapLogger,
 
 		dao.NewUserDAO,
 		article.NewGormArticleDAO,
@@ -34,7 +34,7 @@ func InitWebServer() *gin.Engine {
 		sms.InitSmsSvc,
 		service.NewUserService,
 		service.NewSMSCodeService,
-		ioc.InitWechatService,
+		ioc.InitLocalWechatService,
 		service.NewArticleService,
 
 		jwt.NewRedisHandler,

@@ -12,6 +12,7 @@ import (
 	"geektime-basic-go/webook/internal/service"
 	"geektime-basic-go/webook/internal/service/oauth2/wechat"
 	myjwt "geektime-basic-go/webook/internal/web/jwt"
+	"geektime-basic-go/webook/internal/web/middleware/handlefunc"
 )
 
 var _ handler = (*OAuth2WechatHandler)(nil)
@@ -51,7 +52,7 @@ func (oh *OAuth2WechatHandler) OAuth2URL(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, InternalServerError())
 		return
 	}
-	ctx.JSON(http.StatusOK, Result{Data: url})
+	ctx.JSON(http.StatusOK, handlefunc.Response{Data: url})
 }
 
 func (oh *OAuth2WechatHandler) Callback(ctx *gin.Context) {
@@ -75,7 +76,7 @@ func (oh *OAuth2WechatHandler) Callback(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, InternalServerError())
 		return
 	}
-	ctx.JSON(http.StatusOK, Result{Msg: "登陆成功"})
+	ctx.JSON(http.StatusOK, handlefunc.Response{Msg: "登陆成功"})
 }
 
 func (oh *OAuth2WechatHandler) setStateCookie(ctx *gin.Context, state string) error {

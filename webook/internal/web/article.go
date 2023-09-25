@@ -8,6 +8,7 @@ import (
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/service"
 	"geektime-basic-go/webook/internal/web/jwt"
+	"geektime-basic-go/webook/internal/web/middleware/handlefunc"
 	"geektime-basic-go/webook/pkg/logger"
 )
 
@@ -47,7 +48,7 @@ func (ah *ArticleHandler) Edit(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, Result{Data: id})
+	ctx.JSON(http.StatusOK, handlefunc.Response{Data: id})
 }
 
 type ArticleReq struct {
