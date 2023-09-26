@@ -8,7 +8,7 @@ require (
 	github.com/alibabacloud-go/dysmsapi-20170525/v3 v3.0.6
 	github.com/allegro/bigcache/v3 v3.1.0
 	github.com/dlclark/regexp2 v1.10.0
-	github.com/ecodeclub/ekit v0.0.7
+	github.com/ecodeclub/ekit v0.0.8
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.9.1
@@ -18,12 +18,12 @@ require (
 	github.com/google/uuid v1.3.1
 	github.com/google/wire v0.5.0
 	github.com/lithammer/shortuuid/v4 v4.0.0
-	github.com/redis/go-redis/v9 v9.1.0
+	github.com/redis/go-redis/v9 v9.2.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.16.0
 	github.com/stretchr/testify v1.8.4
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.751
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms v1.0.751
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.756
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms v1.0.756
 	go.uber.org/mock v0.3.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.13.0
@@ -105,7 +105,7 @@ require (
 	go.etcd.io/etcd/client/v2 v2.305.7 // indirect
 	go.etcd.io/etcd/client/v3 v3.5.9 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/oauth2 v0.7.0 // indirect
