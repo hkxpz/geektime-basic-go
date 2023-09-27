@@ -96,7 +96,7 @@ func TestOAuth2WechatHandler_Callback(t *testing.T) {
 		mock      func(ctrl *gomock.Controller) (wechat.Service, service.UserService, myjwt.Handler)
 		addCookie func(req *http.Request)
 		wantCode  int
-		wantRse   Result
+		wantRse   Response
 	}{
 		{
 			name: "登陆成功",
@@ -114,7 +114,7 @@ func TestOAuth2WechatHandler_Callback(t *testing.T) {
 				req.AddCookie(cookie)
 			},
 			wantCode: http.StatusOK,
-			wantRse:  Result{Msg: "登陆成功"},
+			wantRse:  Response{Msg: "登陆成功"},
 		},
 		{
 			name: "没有cookie",
@@ -210,7 +210,7 @@ func TestOAuth2WechatHandler_Callback(t *testing.T) {
 
 			server.ServeHTTP(recorder, req)
 			assert.Equal(t, tc.wantCode, recorder.Code)
-			var res Result
+			var res Response
 			err := json.NewDecoder(recorder.Body).Decode(&res)
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantRse, res)

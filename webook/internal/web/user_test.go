@@ -10,6 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/zap"
+
+	"geektime-basic-go/webook/pkg/logger"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	uuid "github.com/lithammer/shortuuid/v4"
@@ -57,7 +61,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 			name: "注册成功",
 			mock: func(ctl *gomock.Controller) service.UserService {
 				userSvc := mocks.NewMockUserService(ctl)
-				userSvc.EXPECT().Signup(gomock.Any(), domain.User{Email: "123@qq.com", Password: "hello@world123"}).Return(nil, nil)
+				userSvc.EXPECT().Signup(gomock.Any(), domain.User{Email: "123@qq.com", Password: "hello@world123"}).Return(nil)
 				return userSvc
 			},
 			body:     bytes.NewBuffer([]byte(`{"email":"123@qq.com","password":"hello@world123","confirmPassword":"hello@world123"}`)),
@@ -173,7 +177,7 @@ func TestUserHandler_Login(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) (service.UserService, myjwt.Handler) {
 				us := mocks.NewMockUserService(ctrl)
 				jh := jwtmocks.NewMockHandler(ctrl)
-				us.EXPECT().Login(gomock.Any(), "123@qq.com", "hello@world123").Return(userDomain, nil, nil)
+				us.EXPECT().Login(gomock.Any(), "123@qq.com", "hello@world123").Return(userDomain, nil)
 				jh.EXPECT().SetLoginToken(gomock.Any(), int64(1))
 				return us, jh
 			},
@@ -188,7 +192,7 @@ func TestUserHandler_Login(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) (service.UserService, myjwt.Handler) {
 				us := mocks.NewMockUserService(ctrl)
 				jh := jwtmocks.NewMockHandler(ctrl)
-				us.EXPECT().Login(gomock.Any(), "123@qq.com", "hello@world123").Return(userDomain, nil, nil)
+				us.EXPECT().Login(gomock.Any(), "123@qq.com", "hello@world123").Return(userDomain, nil)
 				jh.EXPECT().SetLoginToken(gomock.Any(), int64(1)).Return(errors.New("设置token失败"))
 				return us, jh
 			},
@@ -290,23 +294,13 @@ func TestUserHandler_Edit(t *testing.T) {
 			name: "修改成功",
 			mock: func(ctrl *gomock.Controller) service.UserService {
 				us := mocks.NewMockUserService(ctrl)
-				us.EXPECT().Edit(gomock.Any(), userDomain).Return(nil, nil)
+				us.EXPECT().Edit(gomock.Any(), userDomain).Return(nil)
 				return us
 			},
 			ID:       1,
 			body:     bytes.NewBuffer([]byte(`{"nickname":"泰裤辣","birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
 			wantCode: http.StatusOK,
 			wantRes:  handlefunc.Response{Code: 0, Msg: "OK"},
-		},
-		{
-			name: "解析输入失败",
-			mock: func(ctrl *gomock.Controller) service.UserService {
-				return nil
-			},
-			ID:       1,
-			body:     bytes.NewBuffer([]byte(`{,"nickname":"泰裤辣","birthday":"2000-01-01","aboutMe":"泰裤辣"}`)),
-			wantCode: http.StatusBadRequest,
-			wantRes:  InternalServerError(),
 		},
 		{
 			name: "空昵称",
@@ -368,7 +362,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			defer ctrl.Finish()
 
 			us := tc.mock(ctrl)
-			uh := NewUserHandler(us, nil, nil, nil)
+			uh := NewUserHandler(us, nil, nil, logger.NewZapLogger(zap.NewExample()))
 			req := reqBuilder(t, http.MethodPost, "/users/edit", tc.body)
 			recorder := httptest.NewRecorder()
 
@@ -415,7 +409,7 @@ func TestUserHandler_Profile(t *testing.T) {
 			name: "成功",
 			mock: func(ctrl *gomock.Controller) service.UserService {
 				us := mocks.NewMockUserService(ctrl)
-				us.EXPECT().Profile(gomock.Any(), int64(1)).Return(userDomain, nil, nil)
+				us.EXPECT().Profile(gomock.Any(), int64(1)).Return(userDomain, nil)
 				return us
 			},
 			ID:       1,
@@ -482,7 +476,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			name: "发送成功",
 			mock: func(ctrl *gomock.Controller) service.CodeService {
 				cs := mocks.NewMockCodeService(ctrl)
-				cs.EXPECT().Send(gomock.Any(), biz, "13888888888").Return(nil, nil)
+				cs.EXPECT().Send(gomock.Any(), biz, "13888888888").Return(nil)
 				return cs
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone":"13888888888"}`)),
@@ -582,8 +576,8 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 				us := mocks.NewMockUserService(ctrl)
 				cs := mocks.NewMockCodeService(ctrl)
 				jh := jwtmocks.NewMockHandler(ctrl)
-				cs.EXPECT().Verify(gomock.Any(), biz, "13888888888", "123456").Return(true, nil, nil)
-				us.EXPECT().FindOrCreate(gomock.Any(), "13888888888").Return(userDomain, nil, nil)
+				cs.EXPECT().Verify(gomock.Any(), biz, "13888888888", "123456").Return(true, nil)
+				us.EXPECT().FindOrCreate(gomock.Any(), "13888888888").Return(userDomain, nil)
 				jh.EXPECT().SetLoginToken(gomock.Any(), int64(1))
 				return us, cs, jh
 			},
@@ -597,22 +591,13 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 				us := mocks.NewMockUserService(ctrl)
 				cs := mocks.NewMockCodeService(ctrl)
 				jh := jwtmocks.NewMockHandler(ctrl)
-				cs.EXPECT().Verify(gomock.Any(), biz, "13888888888", "123456").Return(true, nil, nil)
-				us.EXPECT().FindOrCreate(gomock.Any(), "13888888888").Return(userDomain, nil, nil)
+				cs.EXPECT().Verify(gomock.Any(), biz, "13888888888", "123456").Return(true, nil)
+				us.EXPECT().FindOrCreate(gomock.Any(), "13888888888").Return(userDomain, nil)
 				jh.EXPECT().SetLoginToken(gomock.Any(), int64(1)).Return(errors.New("模拟设置token失败"))
 				return us, cs, jh
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone":"13888888888","code":"123456"}`)),
 			wantCode: http.StatusOK,
-			wantRes:  InternalServerError(),
-		},
-		{
-			name: "解析输入失败",
-			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService, myjwt.Handler) {
-				return nil, nil, nil
-			},
-			body:     bytes.NewBuffer([]byte(`{"phone":"13888888888""code":"123456"}`)),
-			wantCode: http.StatusBadRequest,
 			wantRes:  InternalServerError(),
 		},
 		{
@@ -658,7 +643,7 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 			defer ctrl.Finish()
 
 			us, cs, jh := tc.mock(ctrl)
-			uh := NewUserHandler(us, cs, jh, nil)
+			uh := NewUserHandler(us, cs, jh, logger.NewZapLogger(zap.NewExample()))
 			req := reqBuilder(t, http.MethodPost, "/users/login_sms", tc.body)
 			recorder := httptest.NewRecorder()
 

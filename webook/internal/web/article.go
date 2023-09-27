@@ -1,54 +1,46 @@
 package web
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/service"
-	"geektime-basic-go/webook/internal/web/jwt"
+	myjwt "geektime-basic-go/webook/internal/web/jwt"
 	"geektime-basic-go/webook/internal/web/middleware/handlefunc"
 	"geektime-basic-go/webook/pkg/logger"
 )
 
 type ArticleHandler struct {
-	svc service.ArticleService
-	l   logger.Logger
+	svc     service.ArticleService
+	logFunc handlefunc.LogFunc
 }
 
 func NewArticleHandler(svc service.ArticleService, l logger.Logger) *ArticleHandler {
-	return &ArticleHandler{svc: svc, l: l}
+	return &ArticleHandler{svc: svc, logFunc: handlefunc.DefaultLogFunc(l)}
 }
 
 func (ah *ArticleHandler) RegisterRoutes(s *gin.Engine) {
 	g := s.Group("/articles")
-	g.POST("/edit", ah.Edit)
+	g.POST("/edit", handlefunc.WrapReqWithLog[ArticleReq](ah.Edit, ah.logFunc))
+	g.POST("/publish", handlefunc.WrapReqWithLog[ArticleReq](ah.Publish, ah.logFunc))
 }
 
-func (ah *ArticleHandler) Edit(ctx *gin.Context) {
-	var req ArticleReq
-	if err := ctx.Bind(&req); err != nil {
-		ah.l.Error("反序列化请求失败", logger.Error(err))
-		ctx.JSON(http.StatusOK, InternalServerError())
-		return
-	}
-
-	user, ok := ctx.MustGet("user").(jwt.UserClaims)
-	if !ok {
-		ah.l.Error("获取用户会话信息失败")
-		ctx.JSON(http.StatusOK, InternalServerError())
-		return
-	}
-
-	id, err := ah.svc.Save(ctx, req.toDomain(user.ID))
+func (ah *ArticleHandler) Edit(ctx *gin.Context, req ArticleReq, uc myjwt.UserClaims) (Response, error) {
+	id, err := ah.svc.Save(ctx, req.toDomain(uc.ID))
 	if err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
-		ah.l.Error("保存数据失败", logger.Error(err))
-		return
+		return InternalServerError(), err
 	}
 
-	ctx.JSON(http.StatusOK, handlefunc.Response{Data: id})
+	return Response{Data: id}, nil
+}
+
+func (ah *ArticleHandler) Publish(ctx *gin.Context, req ArticleReq, uc myjwt.UserClaims) (Response, error) {
+	id, err := ah.svc.Publish(ctx, req.toDomain(uc.ID))
+	if err != nil {
+		return InternalServerError(), err
+	}
+
+	return Response{Data: id}, nil
 }
 
 type ArticleReq struct {

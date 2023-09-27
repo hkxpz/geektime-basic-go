@@ -9,76 +9,141 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
 
+	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/integration/startup"
 	"geektime-basic-go/webook/internal/repository/dao/article"
 	myjwt "geektime-basic-go/webook/internal/web/jwt"
-	"geektime-basic-go/webook/ioc"
 )
 
-type ArticleHandlerTestSuite struct {
-	suite.Suite
-	server *gin.Engine
-	db     *gorm.DB
+type ArticleReq struct {
+	ID      int64  `json:"id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
 }
 
-func (s *ArticleHandlerTestSuite) SetupSuite() {
+func TestArticleHandler_Edit(t *testing.T) {
 	startup.InitViper()
 	gin.SetMode(gin.ReleaseMode)
-	s.server = gin.New()
-	s.db = ioc.InitDB()
-	s.server.Use(func(ctx *gin.Context) {
+	server := gin.New()
+	db := startup.InitDB()
+	server.Use(func(ctx *gin.Context) {
 		ctx.Set("user", myjwt.UserClaims{ID: 123})
 	})
-	startup.InitArticleHandler().RegisterRoutes(s.server)
-}
+	startup.InitArticleHandler().RegisterRoutes(server)
 
-func (s *ArticleHandlerTestSuite) TearDownTest() {
-	err := s.db.Exec("TRUNCATE TABLE `articles`").Error
-	require.NoError(s.T(), err)
-	s.db.Exec("TRUNCATE TABLE `published_articles`")
-}
-
-func (s *ArticleHandlerTestSuite) TestArticleHandler_Edit() {
-	t := s.T()
 	testCases := []struct {
 		name   string
 		before func()
 		after  func()
 
-		req Article
+		req ArticleReq
 
 		wantCode int
-		wantRes  Result[int64]
+		wantRes  Response
 	}{
 		{
-			name:   "新建帖子并发表",
-			before: func() {},
+			name: "新建帖子",
+			before: func() {
+				err := db.Exec("TRUNCATE TABLE `articles`").Error
+				require.NoError(t, err)
+			},
 			after: func() {
 				var art article.Article
-				s.db.Where("author_id = ?", 123).First(&art)
-				assert.Equal(t, "hello, 你好", art.Title)
-				assert.Equal(t, "随便试试", art.Content)
-				assert.Equal(t, int64(123), art.AuthorID)
+				db.Where("author_id = ?", 123).First(&art)
 				assert.True(t, art.CreateAt > 0)
 				assert.True(t, art.UpdateAt > 0)
-
-				//var publishedArt article.PublishedArticle
-				//s.db.Where("author_id = ?", 123).First(&publishedArt)
-				//assert.Equal(t, "hello, 你好", publishedArt.Title)
-				//assert.Equal(t, "随便试试", publishedArt.Content)
-				//assert.Equal(t, int64(123), publishedArt.AuthorID)
-				//assert.True(t, publishedArt.CreateAt > 0)
-				//assert.True(t, publishedArt.UpdateAt > 0)
+				assert.Equal(t, article.Article{
+					ID:       1,
+					Title:    "hello, 你好",
+					Content:  "随便试试",
+					AuthorID: 123,
+					Status:   domain.ArticleStatusUnpublished.ToUint8(),
+					CreateAt: art.CreateAt,
+					UpdateAt: art.UpdateAt,
+				}, art)
 			},
-			req: Article{
+			req: ArticleReq{
 				Title:   "hello, 你好",
 				Content: "随便试试",
 			},
 			wantCode: http.StatusOK,
-			wantRes:  Result[int64]{Data: 1},
+			wantRes:  Response{Data: float64(1)},
+		},
+		{
+			name: "更新文章",
+			before: func() {
+				err := db.Exec("TRUNCATE TABLE `articles`").Error
+				require.NoError(t, err)
+
+				db.Create(article.Article{
+					ID:       1,
+					Title:    "我的标题",
+					Content:  "我的内容",
+					AuthorID: 123,
+					Status:   domain.ArticleStatusPublished.ToUint8(),
+					CreateAt: 123,
+					UpdateAt: 123,
+				})
+			},
+			after: func() {
+				var art article.Article
+				db.Where("id = ?", 1).First(&art)
+				assert.True(t, art.UpdateAt > 123)
+				assert.Equal(t, article.Article{
+					ID:       1,
+					Title:    "更新标题",
+					Content:  "更新内容",
+					AuthorID: 123,
+					Status:   domain.ArticleStatusUnpublished.ToUint8(),
+					CreateAt: 123,
+					UpdateAt: art.UpdateAt,
+				}, art)
+			},
+			req: ArticleReq{
+				ID:      1,
+				Title:   "更新标题",
+				Content: "更新内容",
+			},
+			wantCode: http.StatusOK,
+			wantRes:  Response{Data: float64(1)},
+		},
+		{
+			name: "更新别人文章",
+			before: func() {
+				err := db.Exec("TRUNCATE TABLE `articles`").Error
+				require.NoError(t, err)
+
+				db.Create(article.Article{
+					ID:       1,
+					Title:    "我的标题",
+					Content:  "我的内容",
+					AuthorID: 789,
+					Status:   domain.ArticleStatusPublished.ToUint8(),
+					CreateAt: 123,
+					UpdateAt: 123,
+				})
+			},
+			after: func() {
+				var art article.Article
+				db.Where("id = ?", 1).First(&art)
+				assert.Equal(t, article.Article{
+					ID:       1,
+					Title:    "我的标题",
+					Content:  "我的内容",
+					AuthorID: 789,
+					Status:   domain.ArticleStatusPublished.ToUint8(),
+					CreateAt: 123,
+					UpdateAt: 123,
+				}, art)
+			},
+			req: ArticleReq{
+				ID:      1,
+				Title:   "更新标题",
+				Content: "更新内容",
+			},
+			wantCode: http.StatusOK,
+			wantRes:  Response{Code: 5, Msg: "系统错误"},
 		},
 	}
 
@@ -91,23 +156,13 @@ func (s *ArticleHandlerTestSuite) TestArticleHandler_Edit() {
 			require.NoError(t, err)
 			req := reqBuilder(t, http.MethodPost, "/articles/edit", data)
 			recorder := httptest.NewRecorder()
-			s.server.ServeHTTP(recorder, req)
+			server.ServeHTTP(recorder, req)
 
 			assert.Equal(t, tc.wantCode, recorder.Code)
-			var res Result[int64]
+			var res Response
 			err = json.NewDecoder(recorder.Body).Decode(&res)
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantRes, res)
 		})
 	}
-}
-
-func TestArticle(t *testing.T) {
-	suite.Run(t, new(ArticleHandlerTestSuite))
-}
-
-type Article struct {
-	Id      int64  `json:"id"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
 }

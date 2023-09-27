@@ -12,13 +12,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"geektime-basic-go/webook/internal/integration/startup"
-	"geektime-basic-go/webook/internal/web"
-	"geektime-basic-go/webook/internal/web/middleware/handlefunc"
 	"geektime-basic-go/webook/ioc"
 )
 
 func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 	const sendSMSCodeUrl = "/users/login_sms/code/send"
+	startup.InitViper()
 	server := startup.InitWebServer()
 	rdb := ioc.InitRedis()
 	testCases := []struct {
@@ -29,7 +28,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 		body   []byte
 
 		wantCode   int
-		wantResult handlefunc.Response
+		wantResult Response
 	}{
 		{
 			name:   "发送成功",
@@ -48,7 +47,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			},
 			body:       []byte(`{"phone": "13888888888"}`),
 			wantCode:   http.StatusOK,
-			wantResult: handlefunc.Response{Msg: "发送成功"},
+			wantResult: Response{Msg: "发送成功"},
 		},
 		{
 			name:       "空手机号",
@@ -56,7 +55,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			after:      func(t *testing.T) {},
 			body:       []byte(`{"phone": ""}`),
 			wantCode:   http.StatusOK,
-			wantResult: handlefunc.Response{Code: 4, Msg: "手机号码错误"},
+			wantResult: Response{Code: 4, Msg: "手机号码错误"},
 		},
 		{
 			name: "发送太频繁",
@@ -77,7 +76,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			},
 			body:       []byte(`{"phone": "13888888888"}`),
 			wantCode:   http.StatusOK,
-			wantResult: handlefunc.Response{Code: 4, Msg: "短信发送太频繁，请稍后再试"},
+			wantResult: Response{Code: 4, Msg: "短信发送太频繁，请稍后再试"},
 		},
 		{
 			name: "未知错误",
@@ -98,7 +97,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			},
 			body:       []byte(`{"phone": "13888888888"}`),
 			wantCode:   http.StatusOK,
-			wantResult: web.InternalServerError(),
+			wantResult: Response{Code: 5, Msg: "系统错误"},
 		},
 	}
 
@@ -110,7 +109,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			recorder := httptest.NewRecorder()
 			server.ServeHTTP(recorder, req)
 
-			var webRes handlefunc.Response
+			var webRes Response
 			err := json.NewDecoder(recorder.Body).Decode(&webRes)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.wantCode, recorder.Code)

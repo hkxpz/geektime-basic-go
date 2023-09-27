@@ -2,6 +2,7 @@ package handlefunc
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -23,10 +24,13 @@ func WrapReqWithLog[T any](fn func(ctx *gin.Context, req T, uc myjwt.UserClaims)
 func wrapReq[T any](ctx *gin.Context, fn func(ctx *gin.Context, req T, uc myjwt.UserClaims) (Response, error)) (Response, error) {
 	var req T
 	if err := ctx.ShouldBind(&req); err != nil {
-		return InternalServerError(), err
+		return Response{Code: 5, Msg: "系统错误"}, err
 	}
 
-	uc := ctx.MustGet("user").(myjwt.UserClaims)
+	uc, ok := ctx.MustGet("user").(myjwt.UserClaims)
+	if !ok {
+		return Response{Code: 5, Msg: "系统错误"}, errors.New("获取用户会话信息失败")
+	}
 	return fn(ctx, req, uc)
 }
 
@@ -34,13 +38,6 @@ type Response struct {
 	Code int    `json:"code"`
 	Msg  string `json:"msg"`
 	Data any    `json:"data"`
-}
-
-func InternalServerError() Response {
-	return Response{Code: 5, Msg: "系统错误"}
-}
-
-type ReqLog struct {
 }
 
 type LogFunc func(ctx context.Context, args any)

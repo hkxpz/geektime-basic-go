@@ -18,6 +18,7 @@ mockgen.service:
 	@rm -rf ./service/mocks
 	@mockgen -source=./service/user.go -package=mocks -destination=./service/mocks/user.mock_gen.go
 	@mockgen -source=./service/code.go -package=mocks -destination=./service/mocks/code.mock_gen.go
+	@mockgen -source=./service/article.go -package=mocks -destination=./service/mocks/article.mock_gen.go
 
 .PHONY:mockgen.service.sms
 mockgen.service.sms:

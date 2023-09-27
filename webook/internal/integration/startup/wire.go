@@ -17,7 +17,7 @@ import (
 	"geektime-basic-go/webook/ioc/sms"
 )
 
-var thirdProvider = wire.NewSet(ioc.InitRedis, ioc.InitDB, ioc.InitZapLogger)
+var thirdProvider = wire.NewSet(ioc.InitRedis, InitDB, ioc.InitZapLogger)
 
 var userSvcProvider = wire.NewSet(
 	dao.NewUserDAO,
