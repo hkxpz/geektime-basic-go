@@ -1,46 +1,76 @@
 package web
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
+
+	myjwt "geektime-basic-go/webook/internal/web/jwt"
 
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/service"
-	myjwt "geektime-basic-go/webook/internal/web/jwt"
-	"geektime-basic-go/webook/internal/web/middleware/handlefunc"
 	"geektime-basic-go/webook/pkg/logger"
 )
 
 type ArticleHandler struct {
-	svc     service.ArticleService
-	logFunc handlefunc.LogFunc
+	svc service.ArticleService
+	l   logger.Logger
 }
 
 func NewArticleHandler(svc service.ArticleService, l logger.Logger) *ArticleHandler {
-	return &ArticleHandler{svc: svc, logFunc: handlefunc.DefaultLogFunc(l)}
+	return &ArticleHandler{svc: svc, l: l}
 }
 
 func (ah *ArticleHandler) RegisterRoutes(s *gin.Engine) {
 	g := s.Group("/articles")
-	g.POST("/edit", handlefunc.WrapReqWithLog[ArticleReq](ah.Edit, ah.logFunc))
-	g.POST("/publish", handlefunc.WrapReqWithLog[ArticleReq](ah.Publish, ah.logFunc))
+	g.POST("/edit", ah.Edit)
+	g.POST("/publish", ah.Publish)
 }
 
-func (ah *ArticleHandler) Edit(ctx *gin.Context, req ArticleReq, uc myjwt.UserClaims) (Response, error) {
+func (ah *ArticleHandler) Edit(ctx *gin.Context) {
+	var req ArticleReq
+	if err := ctx.Bind(&req); err != nil {
+		ah.l.Error("反序列化请求失败", logger.Error(err))
+		return
+	}
+
+	uc, ok := ctx.MustGet("user").(myjwt.UserClaims)
+	if !ok {
+		ah.l.Error("获得用户会话信息失败")
+		ctx.JSON(http.StatusOK, InternalServerError())
+		return
+	}
+
 	id, err := ah.svc.Save(ctx, req.toDomain(uc.ID))
 	if err != nil {
-		return InternalServerError(), err
+		ah.l.Error("保存数据失败", logger.Error(err))
+		ctx.JSON(http.StatusOK, InternalServerError())
 	}
 
-	return Response{Data: id}, nil
+	ctx.JSON(http.StatusOK, Response{Data: id})
 }
 
-func (ah *ArticleHandler) Publish(ctx *gin.Context, req ArticleReq, uc myjwt.UserClaims) (Response, error) {
-	id, err := ah.svc.Publish(ctx, req.toDomain(uc.ID))
-	if err != nil {
-		return InternalServerError(), err
+func (ah *ArticleHandler) Publish(ctx *gin.Context) {
+	var req ArticleReq
+	if err := ctx.Bind(&req); err != nil {
+		ah.l.Error("反序列化请求失败", logger.Error(err))
+		return
 	}
 
-	return Response{Data: id}, nil
+	uc, ok := ctx.MustGet("user").(myjwt.UserClaims)
+	if !ok {
+		ah.l.Error("获得用户会话信息失败")
+		ctx.JSON(http.StatusOK, InternalServerError())
+		return
+	}
+
+	id, err := ah.svc.Publish(ctx, req.toDomain(uc.ID))
+	if err != nil {
+		ah.l.Error("发表失败", logger.Error(err))
+		ctx.JSON(http.StatusOK, InternalServerError())
+	}
+
+	ctx.JSON(http.StatusOK, Response{Data: id})
 }
 
 type ArticleReq struct {

@@ -81,6 +81,14 @@ func TestArticleHandler_Edit(t *testing.T) {
 			wantCode: http.StatusOK,
 			wantRes:  Response{Code: 5, Msg: "系统错误"},
 		},
+		{
+			name: "Bind错误",
+			mock: func(ctrl *gomock.Controller) service.ArticleService {
+				return nil
+			},
+			reqBody:  []byte(`{"id":1,"title""我的标题","content":"我的内容"}`),
+			wantCode: http.StatusBadRequest,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -93,13 +101,16 @@ func TestArticleHandler_Edit(t *testing.T) {
 			server.Use(func(ctx *gin.Context) {
 				ctx.Set("user", myjwt.UserClaims{ID: 123})
 			})
-			uh := NewArticleHandler(tc.mock(ctrl), logger.NewZapLogger(zap.NewExample()))
+			uh := NewArticleHandler(tc.mock(ctrl), logger.NewZapLogger(zap.NewNop()))
 			uh.RegisterRoutes(server)
 
 			req := reqBuilder(t, http.MethodPost, "/articles/edit", bytes.NewBuffer(tc.reqBody))
 			recorder := httptest.NewRecorder()
 			server.ServeHTTP(recorder, req)
 
+			if recorder.Code != http.StatusOK {
+				return
+			}
 			var webRes Response
 			err := json.NewDecoder(recorder.Body).Decode(&webRes)
 			require.NoError(t, err)
@@ -165,6 +176,14 @@ func TestArticleHandler_Publish(t *testing.T) {
 			wantCode: http.StatusOK,
 			wantRes:  Response{Code: 5, Msg: "系统错误"},
 		},
+		{
+			name: "Bind错误",
+			mock: func(ctrl *gomock.Controller) service.ArticleService {
+				return nil
+			},
+			reqBody:  []byte(`{"title:"我的标题","content":"我的内容"}`),
+			wantCode: http.StatusBadRequest,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -177,13 +196,16 @@ func TestArticleHandler_Publish(t *testing.T) {
 			server.Use(func(ctx *gin.Context) {
 				ctx.Set("user", myjwt.UserClaims{ID: 123})
 			})
-			uh := NewArticleHandler(tc.mock(ctrl), logger.NewZapLogger(zap.NewExample()))
+			uh := NewArticleHandler(tc.mock(ctrl), logger.NewZapLogger(zap.NewNop()))
 			uh.RegisterRoutes(server)
 
 			req := reqBuilder(t, http.MethodPost, "/articles/publish", bytes.NewBuffer(tc.reqBody))
 			recorder := httptest.NewRecorder()
 			server.ServeHTTP(recorder, req)
 
+			if recorder.Code != http.StatusOK {
+				return
+			}
 			var webRes Response
 			err := json.NewDecoder(recorder.Body).Decode(&webRes)
 			require.NoError(t, err)
