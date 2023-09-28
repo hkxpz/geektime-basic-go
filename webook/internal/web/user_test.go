@@ -362,7 +362,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			defer ctrl.Finish()
 
 			us := tc.mock(ctrl)
-			uh := NewUserHandler(us, nil, nil, logger.NewZapLogger(zap.NewExample()))
+			uh := NewUserHandler(us, nil, nil, logger.NewZapLogger(zap.NewNop()))
 			req := reqBuilder(t, http.MethodPost, "/users/edit", tc.body)
 			recorder := httptest.NewRecorder()
 
@@ -615,7 +615,7 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 			name: "验证码错误",
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService, myjwt.Handler) {
 				cs := mocks.NewMockCodeService(ctrl)
-				cs.EXPECT().Verify(gomock.Any(), biz, "13888888888", "123456").Return(false, nil, nil)
+				cs.EXPECT().Verify(gomock.Any(), biz, "13888888888", "123456").Return(false, nil)
 				return nil, cs, nil
 			},
 			body:     bytes.NewBuffer([]byte(`{"phone":"13888888888","code":"123456"}`)),
@@ -627,7 +627,7 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService, myjwt.Handler) {
 				us := mocks.NewMockUserService(ctrl)
 				cs := mocks.NewMockCodeService(ctrl)
-				cs.EXPECT().Verify(gomock.Any(), biz, "13888888888", "123456").Return(true, nil, nil)
+				cs.EXPECT().Verify(gomock.Any(), biz, "13888888888", "123456").Return(true, nil)
 				us.EXPECT().FindOrCreate(gomock.Any(), "13888888888").Return(domain.User{}, errors.New("模拟查找用户失败"))
 				return us, cs, nil
 			},
@@ -643,7 +643,7 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 			defer ctrl.Finish()
 
 			us, cs, jh := tc.mock(ctrl)
-			uh := NewUserHandler(us, cs, jh, logger.NewZapLogger(zap.NewExample()))
+			uh := NewUserHandler(us, cs, jh, logger.NewZapLogger(zap.NewNop()))
 			req := reqBuilder(t, http.MethodPost, "/users/login_sms", tc.body)
 			recorder := httptest.NewRecorder()
 
@@ -687,7 +687,7 @@ func TestUserHandler_RefreshToken(t *testing.T) {
 				ssid, token := newRefreshToken(t, 30*time.Minute, myjwt.RefreshTokenKey)
 				hdl := jwtmocks.NewMockHandler(ctrl)
 				hdl.EXPECT().ExtractTokenString(gomock.Any()).Return(token)
-				hdl.EXPECT().CheckSession(gomock.Any(), ssid).Return(nil, nil)
+				hdl.EXPECT().CheckSession(gomock.Any(), ssid).Return(nil)
 				hdl.EXPECT().SetJWTToken(gomock.Any(), ssid, int64(1))
 				return hdl
 			},
@@ -762,7 +762,7 @@ func TestUserHandler_RefreshToken(t *testing.T) {
 				ssid, token := newRefreshToken(t, 30*time.Minute, myjwt.RefreshTokenKey)
 				hdl := jwtmocks.NewMockHandler(ctrl)
 				hdl.EXPECT().ExtractTokenString(gomock.Any()).Return(token)
-				hdl.EXPECT().CheckSession(gomock.Any(), ssid).Return(nil, nil)
+				hdl.EXPECT().CheckSession(gomock.Any(), ssid).Return(nil)
 				hdl.EXPECT().SetJWTToken(gomock.Any(), ssid, int64(1)).Return(errors.New("模拟设置token失败"))
 				return hdl
 			},
@@ -778,7 +778,7 @@ func TestUserHandler_RefreshToken(t *testing.T) {
 
 			uh := NewUserHandler(nil, nil, tc.mock(ctrl), nil)
 
-			req := reqBuilder(t, http.MethodPost, "/users/refresh_token", nil, nil)
+			req := reqBuilder(t, http.MethodPost, "/users/refresh_token", nil)
 			recorder := httptest.NewRecorder()
 
 			server := gin.New()
@@ -805,7 +805,7 @@ func TestUserHandler_Logout(t *testing.T) {
 			name: "登出成功",
 			mock: func(ctrl *gomock.Controller) myjwt.Handler {
 				hdl := jwtmocks.NewMockHandler(ctrl)
-				hdl.EXPECT().ClearToken(gomock.Any()).Return(nil, nil)
+				hdl.EXPECT().ClearToken(gomock.Any()).Return(nil)
 				return hdl
 			},
 			wantCode: http.StatusOK,
@@ -828,9 +828,9 @@ func TestUserHandler_Logout(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			uh := NewUserHandler(nil, nil, tc.mock(ctrl), nil)
+			uh := NewUserHandler(nil, nil, tc.mock(ctrl), logger.NewZapLogger(zap.NewNop()))
 
-			req := reqBuilder(t, http.MethodPost, "/users/logout", nil, nil)
+			req := reqBuilder(t, http.MethodPost, "/users/logout", nil)
 			recorder := httptest.NewRecorder()
 
 			server := gin.New()

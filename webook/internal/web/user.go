@@ -58,7 +58,7 @@ func (uh *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug.POST("/login", uh.Login)
 	ug.POST("/edit", handlefunc.WrapReqWithLog[EditReq](uh.Edit, uh.logFunc))
 	ug.POST("/login_sms/code/send", uh.SendSMSLoginCode)
-	ug.POST("/login_sms", handlefunc.WrapReqWithLog[LoginSMSReq](uh.LoginSMS, uh.logFunc))
+	ug.POST("/login_sms", uh.LoginSMS)
 	ug.POST("/refresh_token", uh.RefreshToken)
 	ug.POST("/logout", uh.Logout)
 }
@@ -224,25 +224,36 @@ type LoginSMSReq struct {
 	Code  string `json:"code"`
 }
 
-func (uh *UserHandler) LoginSMS(ctx *gin.Context, req LoginSMSReq, uc myjwt.UserClaims) (Response, error) {
-
+func (uh *UserHandler) LoginSMS(ctx *gin.Context) {
+	req := struct {
+		Phone string `json:"phone"`
+		Code  string `json:"code"`
+	}{}
+	if err := ctx.Bind(&req); err != nil {
+		ctx.JSON(http.StatusOK, InternalServerError())
+		return
+	}
 	ok, err := uh.codeSvc.Verify(ctx, bizLogin, req.Phone, req.Code)
 	if err != nil {
-		return InternalServerError(), err
+		ctx.JSON(http.StatusOK, InternalServerError())
+		return
 	}
 	if !ok {
-		return Response{Code: 4, Msg: "验证码错误"}, nil
+		ctx.JSON(http.StatusOK, Response{Code: 4, Msg: "验证码错误"})
+		return
 	}
 
 	u, err := uh.svc.FindOrCreate(ctx, req.Phone)
 	if err != nil {
-		return InternalServerError(), err
+		ctx.JSON(http.StatusOK, InternalServerError())
+		return
 	}
 
 	if err = uh.SetLoginToken(ctx, u.ID); err != nil {
-		return InternalServerError(), err
+		ctx.JSON(http.StatusOK, InternalServerError())
+		return
 	}
-	return Response{Msg: "登录成功"}, nil
+	ctx.JSON(http.StatusOK, Response{Msg: "登录成功"})
 }
 
 func (uh *UserHandler) RefreshToken(ctx *gin.Context) {
