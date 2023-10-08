@@ -28,6 +28,7 @@ var userSvcProvider = wire.NewSet(
 
 var articleSvcProvider = wire.NewSet(
 	article.NewGormArticleDAO,
+	redisCache.NewArticleCache,
 	repository.NewCacheArticleRepository,
 	service.NewArticleService,
 )
@@ -60,6 +61,6 @@ func InitWebServer() *gin.Engine {
 }
 
 func InitArticleHandler() *web.ArticleHandler {
-	wire.Build(thirdProvider, articleSvcProvider, web.NewArticleHandler)
+	wire.Build(userSvcProvider, thirdProvider, articleSvcProvider, web.NewArticleHandler)
 	return new(web.ArticleHandler)
 }

@@ -18,3 +18,8 @@ type CodeCache interface {
 	Set(ctx context.Context, biz, phone, code string) error
 	Verify(ctx context.Context, biz, phone, code string) (bool, error)
 }
+
+type ArticleCache interface {
+	DelFirstPage(ctx context.Context, author int64) error
+	SetPub(ctx context.Context, article domain.Article) error
+}

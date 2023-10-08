@@ -5,10 +5,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	myjwt "geektime-basic-go/webook/internal/web/jwt"
-
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/service"
+	myjwt "geektime-basic-go/webook/internal/web/jwt"
 	"geektime-basic-go/webook/pkg/logger"
 )
 
@@ -45,6 +44,7 @@ func (ah *ArticleHandler) Edit(ctx *gin.Context) {
 	if err != nil {
 		ah.l.Error("保存数据失败", logger.Error(err))
 		ctx.JSON(http.StatusOK, InternalServerError())
+		return
 	}
 
 	ctx.JSON(http.StatusOK, Response{Data: id})
@@ -68,6 +68,7 @@ func (ah *ArticleHandler) Publish(ctx *gin.Context) {
 	if err != nil {
 		ah.l.Error("发表失败", logger.Error(err))
 		ctx.JSON(http.StatusOK, InternalServerError())
+		return
 	}
 
 	ctx.JSON(http.StatusOK, Response{Data: id})
