@@ -28,7 +28,7 @@ var userSvcProvider = wire.NewSet(
 
 var articleSvcProvider = wire.NewSet(
 	article.NewGormArticleDAO,
-	repository.NewArticleRepository,
+	repository.NewCacheArticleRepository,
 	service.NewArticleService,
 )
 

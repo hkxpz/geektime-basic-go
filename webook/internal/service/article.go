@@ -5,6 +5,7 @@ import (
 
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/repository"
+	"geektime-basic-go/webook/pkg/logger"
 )
 
 type ArticleService interface {
@@ -13,29 +14,23 @@ type ArticleService interface {
 }
 
 type articleService struct {
-	repo repository.ArticleRepository
+	repo   repository.ArticleRepository
+	logger logger.Logger
 }
 
-func NewArticleService(repo repository.ArticleRepository) ArticleService {
-	return &articleService{repo: repo}
+func NewArticleService(repo repository.ArticleRepository, logger logger.Logger) ArticleService {
+	return &articleService{repo: repo, logger: logger}
 }
 
-func (a *articleService) Save(ctx context.Context, art domain.Article) (int64, error) {
+func (svc *articleService) Save(ctx context.Context, art domain.Article) (int64, error) {
 	art.Status = domain.ArticleStatusUnpublished
 	if art.ID > 0 {
-		err := a.repo.Update(ctx, art)
-		return art.ID, err
+		return art.ID, svc.repo.Update(ctx, art)
 	}
-
-	return a.repo.Create(ctx, art)
+	return svc.repo.Create(ctx, art)
 }
 
-func (a *articleService) Publish(ctx context.Context, art domain.Article) (int64, error) {
-	art.Status = domain.ArticleStatusUnpublished
-	if art.ID > 0 {
-		err := a.repo.Update(ctx, art)
-		return art.ID, err
-	}
-
-	return a.repo.Create(ctx, art)
+func (svc *articleService) Publish(ctx context.Context, art domain.Article) (int64, error) {
+	art.Status = domain.ArticleStatusPublished
+	return svc.repo.Sync(ctx, art)
 }
