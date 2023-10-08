@@ -166,3 +166,138 @@ func TestArticleHandler_Edit(t *testing.T) {
 		})
 	}
 }
+
+func TestArticleHandler_Publish(t *testing.T) {
+	startup.InitViper()
+	gin.SetMode(gin.ReleaseMode)
+	server := gin.New()
+	db := startup.InitDB()
+	server.Use(func(ctx *gin.Context) {
+		ctx.Set("user", myjwt.UserClaims{ID: 123})
+	})
+	startup.InitArticleHandler().RegisterRoutes(server)
+
+	testCases := []struct {
+		name   string
+		before func()
+		after  func()
+
+		req ArticleReq
+
+		wantCode int
+		wantRes  Response
+	}{
+		{
+			name: "新建帖子并发表成功",
+			before: func() {
+				err := db.Exec("TRUNCATE TABLE `articles`").Error
+				require.NoError(t, err)
+				err = db.Exec("TRUNCATE TABLE `published_articles`").Error
+				require.NoError(t, err)
+			},
+			after: func() {
+				var art article.Article
+				db.Where("author_id = ?", 123).First(&art)
+				assert.True(t, art.CreateAt > 0)
+				assert.True(t, art.UpdateAt > 0)
+				resArt := article.Article{
+					ID:       1,
+					Title:    "hello, 你好",
+					Content:  "随便试试",
+					AuthorID: 123,
+					Status:   domain.ArticleStatusPublished.ToUint8(),
+					CreateAt: art.CreateAt,
+					UpdateAt: art.UpdateAt,
+				}
+				assert.Equal(t, resArt, art)
+
+				var publishedArt article.PublishedArticle
+				db.Where("author_id = ?", 123).First(&publishedArt)
+				assert.True(t, art.CreateAt > 0)
+				assert.True(t, art.UpdateAt > 0)
+				resPublishedArt := article.PublishedArticle(resArt)
+				resPublishedArt.CreateAt = publishedArt.CreateAt
+				resPublishedArt.UpdateAt = publishedArt.UpdateAt
+				assert.Equal(t, resPublishedArt, publishedArt)
+			},
+			req: ArticleReq{
+				Title:   "hello, 你好",
+				Content: "随便试试",
+			},
+			wantCode: http.StatusOK,
+			wantRes:  Response{Data: float64(1)},
+		},
+		{
+			name: "更新帖子并发表成功",
+			before: func() {
+				err := db.Exec("TRUNCATE TABLE `articles`").Error
+				require.NoError(t, err)
+				err = db.Exec("TRUNCATE TABLE `published_articles`").Error
+				require.NoError(t, err)
+
+				art := article.Article{
+					ID:       1,
+					Title:    "hello, 你好",
+					Content:  "随便试试",
+					AuthorID: 123,
+					Status:   domain.ArticleStatusPublished.ToUint8(),
+					CreateAt: 123,
+					UpdateAt: 123,
+				}
+				require.NoError(t, db.Create(art).Error)
+				require.NoError(t, db.Create(article.PublishedArticle(art)).Error)
+			},
+			after: func() {
+				var art article.Article
+				db.Model(art).Where("author_id = ?", 123).First(&art)
+				assert.True(t, art.CreateAt > 0)
+				assert.True(t, art.UpdateAt > 0)
+				resArt := article.Article{
+					ID:       1,
+					Title:    "更新啦",
+					Content:  "更新啦",
+					AuthorID: 123,
+					Status:   domain.ArticleStatusPublished.ToUint8(),
+					CreateAt: art.CreateAt,
+					UpdateAt: art.UpdateAt,
+				}
+				assert.Equal(t, resArt, art)
+
+				var publishedArt article.PublishedArticle
+				db.Model(publishedArt).Where("author_id = ?", 123).First(&publishedArt)
+				assert.True(t, art.CreateAt > 0)
+				assert.True(t, art.UpdateAt > 0)
+				resPublishedArt := article.PublishedArticle(resArt)
+				resPublishedArt.CreateAt = publishedArt.CreateAt
+				resPublishedArt.UpdateAt = publishedArt.UpdateAt
+				assert.Equal(t, resPublishedArt, publishedArt)
+			},
+			req: ArticleReq{
+				ID:      1,
+				Title:   "更新啦",
+				Content: "更新啦",
+			},
+			wantCode: http.StatusOK,
+			wantRes:  Response{Data: float64(1)},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.before()
+			defer tc.after()
+
+			data, err := json.Marshal(tc.req)
+			require.NoError(t, err)
+			req := reqBuilder(t, http.MethodPost, "/articles/publish", data)
+			recorder := httptest.NewRecorder()
+			server.ServeHTTP(recorder, req)
+
+			assert.Equal(t, tc.wantCode, recorder.Code)
+			var res Response
+			err = json.NewDecoder(recorder.Body).Decode(&res)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantRes, res)
+		})
+	}
+}
