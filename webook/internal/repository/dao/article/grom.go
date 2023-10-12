@@ -45,34 +45,30 @@ func (dao *gormDAO) UpdateById(ctx context.Context, art Article) error {
 }
 
 func (dao *gormDAO) Sync(ctx context.Context, art Article) (int64, error) {
-	tx := dao.db.WithContext(ctx).Begin()
-	defer tx.Rollback()
+	err := dao.db.Transaction(func(tx *gorm.DB) error {
+		var err error
+		if art.ID == 0 {
+			art.ID, err = NewGormArticleDAO(tx).Insert(ctx, art)
+		} else {
+			err = NewGormArticleDAO(tx).UpdateById(ctx, art)
+		}
+		if err != nil {
+			return err
+		}
 
-	var err error
-	if art.ID == 0 {
-		art.ID, err = NewGormArticleDAO(tx).Insert(ctx, art)
-	} else {
-		err = NewGormArticleDAO(tx).UpdateById(ctx, art)
-	}
-	if err != nil {
-		return 0, err
-	}
+		now := time.Now().UnixMilli()
+		publishArt := PublishedArticle(art)
+		publishArt.CreateAt, publishArt.UpdateAt = now, now
+		return tx.Clauses(clause.OnConflict{
+			Columns: []clause.Column{{Name: "id"}},
+			DoUpdates: clause.Assignments(map[string]interface{}{
+				"title":     art.Title,
+				"content":   art.Content,
+				"status":    art.Status,
+				"update_at": now,
+			}),
+		}).Create(&publishArt).Error
+	})
 
-	now := time.Now().UnixMilli()
-	publishArt := PublishedArticle(art)
-	publishArt.CreateAt, publishArt.UpdateAt = now, now
-	err = tx.Clauses(clause.OnConflict{
-		Columns: []clause.Column{{Name: "id"}},
-		DoUpdates: clause.Assignments(map[string]interface{}{
-			"title":     art.Title,
-			"content":   art.Content,
-			"status":    art.Status,
-			"update_at": now,
-		}),
-	}).Create(&publishArt).Error
-	if err != nil {
-		return 0, err
-	}
-	tx.Commit()
-	return art.ID, tx.Error
+	return art.ID, err
 }
