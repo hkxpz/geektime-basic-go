@@ -13,6 +13,7 @@ type ArticleRepository interface {
 	Create(ctx context.Context, art domain.Article) (int64, error)
 	Update(ctx context.Context, art domain.Article) error
 	Sync(ctx context.Context, art domain.Article) (int64, error)
+	SyncStatus(ctx context.Context, uid, id int64, status domain.ArticleStatus) error
 }
 
 type cacheArticleRepository struct {
@@ -104,6 +105,10 @@ func (repo *cacheArticleRepository) Sync(ctx context.Context, art domain.Article
 	}()
 
 	return id, nil
+}
+
+func (repo *cacheArticleRepository) SyncStatus(ctx context.Context, uid, id int64, status domain.ArticleStatus) error {
+	return repo.dao.SyncStatus(ctx, uid, id, status.ToUint8())
 }
 
 func (repo *cacheArticleRepository) toEntity(art domain.Article) article.Article {

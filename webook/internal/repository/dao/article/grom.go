@@ -2,7 +2,6 @@ package article
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"gorm.io/gorm"
@@ -26,7 +25,7 @@ func (dao *gormDAO) Insert(ctx context.Context, art Article) (int64, error) {
 
 func (dao *gormDAO) UpdateById(ctx context.Context, art Article) error {
 	now := time.Now().UnixMilli()
-	res := dao.db.Model(&Article{}).WithContext(ctx).
+	res := dao.db.WithContext(ctx).Model(&Article{}).
 		Where("id= ? AND author_id = ? ", art.ID, art.AuthorID).
 		Updates(map[string]any{
 			"title":     art.Title,
@@ -39,13 +38,13 @@ func (dao *gormDAO) UpdateById(ctx context.Context, art Article) error {
 		return err
 	}
 	if res.RowsAffected == 0 {
-		return errors.New("更新数据失败")
+		return ErrPossibleIncorrectAuthor
 	}
 	return nil
 }
 
 func (dao *gormDAO) Sync(ctx context.Context, art Article) (int64, error) {
-	err := dao.db.Transaction(func(tx *gorm.DB) error {
+	err := dao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var err error
 		if art.ID == 0 {
 			art.ID, err = NewGormArticleDAO(tx).Insert(ctx, art)
@@ -71,4 +70,26 @@ func (dao *gormDAO) Sync(ctx context.Context, art Article) (int64, error) {
 	})
 
 	return art.ID, err
+}
+
+func (dao *gormDAO) SyncStatus(ctx context.Context, uid, id int64, status uint8) error {
+	return dao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		res := tx.Model(&Article{}).Where("id = ? AND author_id = ?", id, uid).Update("status", status)
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected != 1 {
+			return ErrPossibleIncorrectAuthor
+		}
+
+		res = tx.Model(&PublishedArticle{}).Where("id = ? AND author_id = ?", id, uid).Update("status", status)
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected != 1 {
+			return ErrPossibleIncorrectAuthor
+		}
+
+		return nil
+	})
 }

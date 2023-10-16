@@ -17,7 +17,7 @@ import (
 	"geektime-basic-go/webook/ioc/sms"
 )
 
-var thirdProvider = wire.NewSet(ioc.InitRedis, InitDB, ioc.InitZapLogger)
+var thirdProvider = wire.NewSet(ioc.InitRedis, InitDB, InitLog)
 
 var userSvcProvider = wire.NewSet(
 	dao.NewUserDAO,
@@ -60,7 +60,14 @@ func InitWebServer() *gin.Engine {
 	return gin.Default()
 }
 
-func InitArticleHandler() *web.ArticleHandler {
-	wire.Build(userSvcProvider, thirdProvider, articleSvcProvider, web.NewArticleHandler)
+func InitArticleHandler(dao article.DAO) *web.ArticleHandler {
+	wire.Build(
+		userSvcProvider,
+		thirdProvider,
+		redisCache.NewArticleCache,
+		repository.NewCacheArticleRepository,
+		service.NewArticleService,
+		web.NewArticleHandler,
+	)
 	return new(web.ArticleHandler)
 }

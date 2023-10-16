@@ -24,6 +24,7 @@ func (ah *ArticleHandler) RegisterRoutes(s *gin.Engine) {
 	g := s.Group("/articles")
 	g.POST("/edit", ah.Edit)
 	g.POST("/publish", ah.Publish)
+	g.POST("/withdraw", ah.Withdraw)
 }
 
 func (ah *ArticleHandler) Edit(ctx *gin.Context) {
@@ -72,6 +73,29 @@ func (ah *ArticleHandler) Publish(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, Response{Data: id})
+}
+
+func (ah *ArticleHandler) Withdraw(ctx *gin.Context) {
+	var req ArticleReq
+	if err := ctx.Bind(&req); err != nil {
+		ah.l.Error("反序列化请求失败", logger.Error(err))
+		return
+	}
+
+	uc, ok := ctx.MustGet("user").(myjwt.UserClaims)
+	if !ok {
+		ah.l.Error("获得用户会话信息失败")
+		ctx.JSON(http.StatusOK, InternalServerError())
+		return
+	}
+
+	if err := ah.svc.Withdraw(ctx, uc.ID, req.ID); err != nil {
+		ah.l.Error("设置为尽自己可见失败", logger.Error(err), logger.Field{Key: "id", Value: req.ID})
+		ctx.JSON(http.StatusOK, InternalServerError())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, Response{Msg: "OK"})
 }
 
 type ArticleReq struct {

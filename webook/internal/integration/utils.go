@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func reqBuilder(t *testing.T, method, url string, body []byte, headers ...[]string) *http.Request {
+func ReqBuilder(t *testing.T, method, url string, body []byte, headers ...[]string) *http.Request {
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
 	require.NoError(t, err)
 

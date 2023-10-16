@@ -105,7 +105,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.before(t)
 
-			req := reqBuilder(t, http.MethodPost, sendSMSCodeUrl, tc.body)
+			req := ReqBuilder(t, http.MethodPost, sendSMSCodeUrl, tc.body)
 			recorder := httptest.NewRecorder()
 			server.ServeHTTP(recorder, req)
 

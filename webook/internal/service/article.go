@@ -11,6 +11,7 @@ import (
 type ArticleService interface {
 	Save(ctx context.Context, art domain.Article) (int64, error)
 	Publish(ctx context.Context, art domain.Article) (int64, error)
+	Withdraw(ctx context.Context, uid, id int64) error
 }
 
 type articleService struct {
@@ -33,4 +34,8 @@ func (svc *articleService) Save(ctx context.Context, art domain.Article) (int64,
 func (svc *articleService) Publish(ctx context.Context, art domain.Article) (int64, error) {
 	art.Status = domain.ArticleStatusPublished
 	return svc.repo.Sync(ctx, art)
+}
+
+func (svc *articleService) Withdraw(ctx context.Context, uid, id int64) error {
+	return svc.repo.SyncStatus(ctx, uid, id, domain.ArticleStatusPrivate)
 }

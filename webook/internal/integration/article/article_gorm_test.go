@@ -1,4 +1,4 @@
-package integration
+package article
 
 import (
 	"encoding/json"
@@ -9,48 +9,63 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
 
 	"geektime-basic-go/webook/internal/domain"
+	"geektime-basic-go/webook/internal/integration"
 	"geektime-basic-go/webook/internal/integration/startup"
 	"geektime-basic-go/webook/internal/repository/dao/article"
 	myjwt "geektime-basic-go/webook/internal/web/jwt"
 )
 
-type ArticleReq struct {
-	ID      int64  `json:"id"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
+type ArticleGORMHandlerTestSuite struct {
+	suite.Suite
+	server *gin.Engine
+	db     *gorm.DB
 }
 
-func TestArticleHandler_Edit(t *testing.T) {
+func TestGORMArticle(t *testing.T) {
+	suite.Run(t, new(ArticleGORMHandlerTestSuite))
+}
+
+func (s *ArticleGORMHandlerTestSuite) SetupSuite() {
 	startup.InitViper()
 	gin.SetMode(gin.ReleaseMode)
-	server := gin.New()
-	db := startup.InitDB()
-	server.Use(func(ctx *gin.Context) {
+	s.server = gin.New()
+	s.server.Use(func(ctx *gin.Context) {
 		ctx.Set("user", myjwt.UserClaims{ID: 123})
 	})
-	startup.InitArticleHandler().RegisterRoutes(server)
+	s.db = startup.InitDB()
+	ah := startup.InitArticleHandler(article.NewGormArticleDAO(s.db))
+	ah.RegisterRoutes(s.server)
+}
 
+func (s *ArticleGORMHandlerTestSuite) TearDownTest() {
+	err := s.db.Exec("TRUNCATE TABLE `articles`").Error
+	assert.NoError(s.T(), err)
+	err = s.db.Exec("TRUNCATE TABLE `published_articles`").Error
+	assert.NoError(s.T(), err)
+}
+
+func (s *ArticleGORMHandlerTestSuite) TestArticleHandler_Edit() {
+	t := s.T()
 	testCases := []struct {
 		name   string
 		before func()
 		after  func()
 
-		req ArticleReq
+		req Article
 
 		wantCode int
-		wantRes  Response
+		wantRes  integration.Response
 	}{
 		{
-			name: "新建帖子",
-			before: func() {
-				err := db.Exec("TRUNCATE TABLE `articles`").Error
-				require.NoError(t, err)
-			},
+			name:   "新建帖子",
+			before: func() {},
 			after: func() {
 				var art article.Article
-				db.Where("author_id = ?", 123).First(&art)
+				s.db.Where("author_id = ?", 123).First(&art)
 				assert.True(t, art.CreateAt > 0)
 				assert.True(t, art.UpdateAt > 0)
 				assert.Equal(t, article.Article{
@@ -63,20 +78,20 @@ func TestArticleHandler_Edit(t *testing.T) {
 					UpdateAt: art.UpdateAt,
 				}, art)
 			},
-			req: ArticleReq{
+			req: Article{
 				Title:   "hello, 你好",
 				Content: "随便试试",
 			},
 			wantCode: http.StatusOK,
-			wantRes:  Response{Data: float64(1)},
+			wantRes:  integration.Response{Data: float64(1)},
 		},
 		{
 			name: "更新文章",
 			before: func() {
-				err := db.Exec("TRUNCATE TABLE `articles`").Error
+				err := s.db.Exec("TRUNCATE TABLE `articles`").Error
 				require.NoError(t, err)
 
-				db.Create(article.Article{
+				s.db.Create(article.Article{
 					ID:       1,
 					Title:    "我的标题",
 					Content:  "我的内容",
@@ -88,7 +103,7 @@ func TestArticleHandler_Edit(t *testing.T) {
 			},
 			after: func() {
 				var art article.Article
-				db.Where("id = ?", 1).First(&art)
+				s.db.Where("id = ?", 1).First(&art)
 				assert.True(t, art.UpdateAt > 123)
 				assert.Equal(t, article.Article{
 					ID:       1,
@@ -100,21 +115,21 @@ func TestArticleHandler_Edit(t *testing.T) {
 					UpdateAt: art.UpdateAt,
 				}, art)
 			},
-			req: ArticleReq{
+			req: Article{
 				ID:      1,
 				Title:   "更新标题",
 				Content: "更新内容",
 			},
 			wantCode: http.StatusOK,
-			wantRes:  Response{Data: float64(1)},
+			wantRes:  integration.Response{Data: float64(1)},
 		},
 		{
 			name: "更新别人文章",
 			before: func() {
-				err := db.Exec("TRUNCATE TABLE `articles`").Error
+				err := s.db.Exec("TRUNCATE TABLE `articles`").Error
 				require.NoError(t, err)
 
-				db.Create(article.Article{
+				s.db.Create(article.Article{
 					ID:       1,
 					Title:    "我的标题",
 					Content:  "我的内容",
@@ -126,7 +141,7 @@ func TestArticleHandler_Edit(t *testing.T) {
 			},
 			after: func() {
 				var art article.Article
-				db.Where("id = ?", 1).First(&art)
+				s.db.Where("id = ?", 1).First(&art)
 				assert.Equal(t, article.Article{
 					ID:       1,
 					Title:    "我的标题",
@@ -137,13 +152,13 @@ func TestArticleHandler_Edit(t *testing.T) {
 					UpdateAt: 123,
 				}, art)
 			},
-			req: ArticleReq{
+			req: Article{
 				ID:      1,
 				Title:   "更新标题",
 				Content: "更新内容",
 			},
 			wantCode: http.StatusOK,
-			wantRes:  Response{Code: 5, Msg: "系统错误"},
+			wantRes:  integration.Response{Code: 5, Msg: "系统错误"},
 		},
 	}
 
@@ -154,12 +169,12 @@ func TestArticleHandler_Edit(t *testing.T) {
 
 			data, err := json.Marshal(tc.req)
 			require.NoError(t, err)
-			req := reqBuilder(t, http.MethodPost, "/articles/edit", data)
+			req := integration.ReqBuilder(t, http.MethodPost, "/articles/edit", data)
 			recorder := httptest.NewRecorder()
-			server.ServeHTTP(recorder, req)
+			s.server.ServeHTTP(recorder, req)
 
 			assert.Equal(t, tc.wantCode, recorder.Code)
-			var res Response
+			var res integration.Response
 			err = json.NewDecoder(recorder.Body).Decode(&res)
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantRes, res)
@@ -167,37 +182,38 @@ func TestArticleHandler_Edit(t *testing.T) {
 	}
 }
 
-func TestArticleHandler_Publish(t *testing.T) {
+func (s *ArticleGORMHandlerTestSuite) TestArticleHandler_Publish() {
+	t := s.T()
 	startup.InitViper()
 	gin.SetMode(gin.ReleaseMode)
-	server := gin.New()
+	s.server = gin.New()
 	db := startup.InitDB()
-	server.Use(func(ctx *gin.Context) {
+	s.server.Use(func(ctx *gin.Context) {
 		ctx.Set("user", myjwt.UserClaims{ID: 123})
 	})
-	startup.InitArticleHandler().RegisterRoutes(server)
+	startup.InitArticleHandler(article.NewGormArticleDAO(db)).RegisterRoutes(s.server)
 
 	testCases := []struct {
 		name   string
 		before func()
 		after  func()
 
-		req ArticleReq
+		req Article
 
 		wantCode int
-		wantRes  Response
+		wantRes  integration.Response
 	}{
 		{
 			name: "新建帖子并发表成功",
 			before: func() {
-				err := db.Exec("TRUNCATE TABLE `articles`").Error
+				err := s.db.Exec("TRUNCATE TABLE `articles`").Error
 				require.NoError(t, err)
-				err = db.Exec("TRUNCATE TABLE `published_articles`").Error
+				err = s.db.Exec("TRUNCATE TABLE `published_articles`").Error
 				require.NoError(t, err)
 			},
 			after: func() {
 				var art article.Article
-				db.Where("author_id = ?", 123).First(&art)
+				s.db.Where("author_id = ?", 123).First(&art)
 				assert.True(t, art.CreateAt > 0)
 				assert.True(t, art.UpdateAt > 0)
 				resArt := article.Article{
@@ -212,7 +228,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 				assert.Equal(t, resArt, art)
 
 				var publishedArt article.PublishedArticle
-				db.Where("author_id = ?", 123).First(&publishedArt)
+				s.db.Where("author_id = ?", 123).First(&publishedArt)
 				assert.True(t, art.CreateAt > 0)
 				assert.True(t, art.UpdateAt > 0)
 				resPublishedArt := article.PublishedArticle(resArt)
@@ -220,19 +236,19 @@ func TestArticleHandler_Publish(t *testing.T) {
 				resPublishedArt.UpdateAt = publishedArt.UpdateAt
 				assert.Equal(t, resPublishedArt, publishedArt)
 			},
-			req: ArticleReq{
+			req: Article{
 				Title:   "hello, 你好",
 				Content: "随便试试",
 			},
 			wantCode: http.StatusOK,
-			wantRes:  Response{Data: float64(1)},
+			wantRes:  integration.Response{Data: float64(1)},
 		},
 		{
 			name: "更新帖子并发表成功",
 			before: func() {
-				err := db.Exec("TRUNCATE TABLE `articles`").Error
+				err := s.db.Exec("TRUNCATE TABLE `articles`").Error
 				require.NoError(t, err)
-				err = db.Exec("TRUNCATE TABLE `published_articles`").Error
+				err = s.db.Exec("TRUNCATE TABLE `published_articles`").Error
 				require.NoError(t, err)
 
 				art := article.Article{
@@ -244,12 +260,12 @@ func TestArticleHandler_Publish(t *testing.T) {
 					CreateAt: 123,
 					UpdateAt: 123,
 				}
-				require.NoError(t, db.Create(art).Error)
-				require.NoError(t, db.Create(article.PublishedArticle(art)).Error)
+				require.NoError(t, s.db.Create(art).Error)
+				require.NoError(t, s.db.Create(article.PublishedArticle(art)).Error)
 			},
 			after: func() {
 				var art article.Article
-				db.Model(art).Where("author_id = ?", 123).First(&art)
+				s.db.Model(art).Where("author_id = ?", 123).First(&art)
 				assert.True(t, art.CreateAt > 0)
 				assert.True(t, art.UpdateAt > 0)
 				resArt := article.Article{
@@ -264,7 +280,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 				assert.Equal(t, resArt, art)
 
 				var publishedArt article.PublishedArticle
-				db.Model(publishedArt).Where("author_id = ?", 123).First(&publishedArt)
+				s.db.Model(publishedArt).Where("author_id = ?", 123).First(&publishedArt)
 				assert.True(t, art.CreateAt > 0)
 				assert.True(t, art.UpdateAt > 0)
 				resPublishedArt := article.PublishedArticle(resArt)
@@ -272,13 +288,13 @@ func TestArticleHandler_Publish(t *testing.T) {
 				resPublishedArt.UpdateAt = publishedArt.UpdateAt
 				assert.Equal(t, resPublishedArt, publishedArt)
 			},
-			req: ArticleReq{
+			req: Article{
 				ID:      1,
 				Title:   "更新啦",
 				Content: "更新啦",
 			},
 			wantCode: http.StatusOK,
-			wantRes:  Response{Data: float64(1)},
+			wantRes:  integration.Response{Data: float64(1)},
 		},
 	}
 
@@ -289,12 +305,12 @@ func TestArticleHandler_Publish(t *testing.T) {
 
 			data, err := json.Marshal(tc.req)
 			require.NoError(t, err)
-			req := reqBuilder(t, http.MethodPost, "/articles/publish", data)
+			req := integration.ReqBuilder(t, http.MethodPost, "/articles/publish", data)
 			recorder := httptest.NewRecorder()
-			server.ServeHTTP(recorder, req)
+			s.server.ServeHTTP(recorder, req)
 
 			assert.Equal(t, tc.wantCode, recorder.Code)
-			var res Response
+			var res integration.Response
 			err = json.NewDecoder(recorder.Body).Decode(&res)
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantRes, res)
