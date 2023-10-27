@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/gin-gonic/gin"
+
 	"github.com/bwmarrin/snowflake"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -101,4 +103,14 @@ func (dao *mongoDBDAO) SyncStatus(ctx context.Context, author, id int64, status 
 		return ErrPossibleIncorrectAuthor
 	}
 	return nil
+}
+
+func (dao *mongoDBDAO) GetPubByID(ctx *gin.Context, id int64) (PublishedArticle, error) {
+	res := dao.liveCol.FindOne(ctx, bson.M{"id": id})
+	if res.Err() != nil {
+		return PublishedArticle{}, res.Err()
+	}
+	var pub PublishedArticle
+	err := res.Decode(&pub)
+	return pub, err
 }

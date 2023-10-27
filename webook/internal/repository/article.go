@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 
+	"github.com/gin-gonic/gin"
+
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/repository/cache"
 	"geektime-basic-go/webook/internal/repository/dao/article"
@@ -14,25 +16,26 @@ type ArticleRepository interface {
 	Update(ctx context.Context, art domain.Article) error
 	Sync(ctx context.Context, art domain.Article) (int64, error)
 	SyncStatus(ctx context.Context, uid, id int64, status domain.ArticleStatus) error
+	GetPublishedById(ctx *gin.Context, id int64) (domain.Article, error)
 }
 
 type cacheArticleRepository struct {
 	dao      article.DAO
 	userRepo UserRepository
 	cache    cache.ArticleCache
-	logger   logger.Logger
+	l        logger.Logger
 }
 
 func NewCacheArticleRepository(dao article.DAO,
 	userRepo UserRepository,
 	cache cache.ArticleCache,
-	logger logger.Logger,
+	l logger.Logger,
 ) ArticleRepository {
 	return &cacheArticleRepository{
 		dao:      dao,
 		userRepo: userRepo,
 		cache:    cache,
-		logger:   logger,
+		l:        l,
 	}
 }
 
@@ -43,7 +46,7 @@ func (repo *cacheArticleRepository) Create(ctx context.Context, art domain.Artic
 	}
 
 	if err = repo.cache.DelFirstPage(ctx, art.Author.ID); err != nil {
-		repo.logger.Error(
+		repo.l.Error(
 			"删除缓存失败",
 			logger.Int64("author", art.Author.ID),
 			logger.Error(err),
@@ -59,7 +62,7 @@ func (repo *cacheArticleRepository) Update(ctx context.Context, art domain.Artic
 	}
 
 	if err := repo.cache.DelFirstPage(ctx, art.Author.ID); err != nil {
-		repo.logger.Error(
+		repo.l.Error(
 			"删除缓存失败",
 			logger.Int64("author", art.Author.ID),
 			logger.Error(err),
@@ -78,7 +81,7 @@ func (repo *cacheArticleRepository) Sync(ctx context.Context, art domain.Article
 	go func() {
 		authorID := art.Author.ID
 		if err := repo.cache.DelFirstPage(ctx, authorID); err != nil {
-			repo.logger.Error(
+			repo.l.Error(
 				"删除缓存失败",
 				logger.Int64("author", art.Author.ID),
 				logger.Error(err),
@@ -87,7 +90,7 @@ func (repo *cacheArticleRepository) Sync(ctx context.Context, art domain.Article
 
 		user, err := repo.userRepo.FindByID(ctx, authorID)
 		if err != nil {
-			repo.logger.Error(
+			repo.l.Error(
 				"提前设置缓存准备用户信息失败",
 				logger.Int64("uid", authorID),
 				logger.Error(err),
@@ -96,7 +99,7 @@ func (repo *cacheArticleRepository) Sync(ctx context.Context, art domain.Article
 		art.ID = id
 		art.Author = domain.Author{ID: user.ID, Name: user.Nickname}
 		if err = repo.cache.SetPub(ctx, art); err != nil {
-			repo.logger.Error(
+			repo.l.Error(
 				"提前设置缓存失败",
 				logger.Int64("author", authorID),
 				logger.Error(err),
@@ -129,4 +132,33 @@ func (repo *cacheArticleRepository) toDomain(art article.Article) domain.Article
 		Content: art.Content,
 		Author:  domain.Author{ID: art.AuthorID},
 	}
+}
+
+func (repo *cacheArticleRepository) GetPublishedById(ctx *gin.Context, id int64) (domain.Article, error) {
+	res, err := repo.cache.GetPub(ctx, id)
+	if err == nil {
+		return res, err
+	}
+	art, err := repo.dao.GetPubByID(ctx, id)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	user, err := repo.userRepo.FindByID(ctx, art.AuthorID)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	res = domain.Article{
+		ID:      art.ID,
+		Title:   art.Title,
+		Status:  domain.ArticleStatus(art.Status),
+		Content: art.Content,
+		Author:  domain.Author{ID: user.ID, Name: user.Nickname},
+	}
+
+	go func() {
+		if err = repo.cache.SetPub(ctx, res); err != nil {
+			repo.l.Error("缓存已发表文章失败", logger.Error(err), logger.Int64("aid", res.ID))
+		}
+	}()
+	return res, nil
 }

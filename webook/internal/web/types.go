@@ -12,6 +12,4 @@ type handler interface {
 
 type Response = handlefunc.Response
 
-func InternalServerError() Response {
-	return Response{Code: 5, Msg: "系统错误"}
-}
+var InternalServerError = handlefunc.InternalServerError

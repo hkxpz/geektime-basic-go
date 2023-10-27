@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -92,4 +93,10 @@ func (dao *gormDAO) SyncStatus(ctx context.Context, uid, id int64, status uint8)
 
 		return nil
 	})
+}
+
+func (dao *gormDAO) GetPubByID(ctx *gin.Context, id int64) (PublishedArticle, error) {
+	var pub PublishedArticle
+	err := dao.db.WithContext(ctx).Where("id = ?", id).Find(&pub).Error
+	return pub, err
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 
 	"geektime-basic-go/webook/internal/domain"
@@ -20,23 +21,33 @@ func NewArticleCache(client redis.Cmdable) cache.ArticleCache {
 	return &articleCache{client: client}
 }
 
-func (r *articleCache) DelFirstPage(ctx context.Context, author int64) error {
-	return r.client.Del(ctx, r.firstPageKey(author)).Err()
+func (cache *articleCache) DelFirstPage(ctx context.Context, author int64) error {
+	return cache.client.Del(ctx, cache.firstPageKey(author)).Err()
 }
 
-func (r *articleCache) SetPub(ctx context.Context, art domain.Article) error {
+func (cache *articleCache) SetPub(ctx context.Context, art domain.Article) error {
 	data, err := json.Marshal(art)
 	if err != nil {
 		return err
 	}
 
-	return r.client.Set(ctx, r.readerArtKey(art.ID), data, time.Minute*30).Err()
+	return cache.client.Set(ctx, cache.readerArtKey(art.ID), data, time.Minute*30).Err()
 }
 
-func (r *articleCache) firstPageKey(author int64) string {
+func (cache *articleCache) firstPageKey(author int64) string {
 	return fmt.Sprintf("article:first_page:%d", author)
 }
 
-func (r *articleCache) readerArtKey(author int64) string {
+func (cache *articleCache) readerArtKey(author int64) string {
 	return fmt.Sprintf("article:first_page:%d", author)
+}
+
+func (cache *articleCache) GetPub(ctx *gin.Context, id int64) (domain.Article, error) {
+	data, err := cache.client.Get(ctx, cache.readerArtKey(id)).Bytes()
+	if err != nil {
+		return domain.Article{}, err
+	}
+	var res domain.Article
+	err = json.Unmarshal(data, &res)
+	return res, err
 }

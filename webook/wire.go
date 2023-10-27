@@ -12,6 +12,7 @@ import (
 	"geektime-basic-go/webook/internal/repository/dao/article"
 	"geektime-basic-go/webook/internal/service"
 	"geektime-basic-go/webook/internal/web"
+	webarticle "geektime-basic-go/webook/internal/web/article"
 	"geektime-basic-go/webook/internal/web/jwt"
 	"geektime-basic-go/webook/ioc"
 	"geektime-basic-go/webook/ioc/sms"
@@ -41,7 +42,7 @@ func InitWebServer() *gin.Engine {
 		jwt.NewRedisHandler,
 		web.NewUserHandler,
 		web.NewOAuth2WechatHandler,
-		web.NewArticleHandler,
+		webarticle.NewArticleHandler,
 
 		ioc.Middlewares,
 

@@ -9,6 +9,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"geektime-basic-go/webook/internal/web"
+	"geektime-basic-go/webook/internal/web/article"
 	myjwt "geektime-basic-go/webook/internal/web/jwt"
 	"geektime-basic-go/webook/internal/web/middleware/login"
 	"geektime-basic-go/webook/pkg/ginx/middleware/accesslog"
@@ -17,7 +18,7 @@ import (
 	"geektime-basic-go/webook/pkg/ratelimit"
 )
 
-func InitWebServer(uh *web.UserHandler, ah *web.ArticleHandler, oh *web.OAuth2WechatHandler, fn []gin.HandlerFunc) *gin.Engine {
+func InitWebServer(uh *web.UserHandler, ah *article.Handler, oh *web.OAuth2WechatHandler, fn []gin.HandlerFunc) *gin.Engine {
 	server := gin.Default()
 	server.Use(fn...)
 	uh.RegisterRoutes(server)
