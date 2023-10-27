@@ -13,8 +13,7 @@ import (
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/service"
 	myjwt "geektime-basic-go/webook/internal/web/jwt"
-	"geektime-basic-go/webook/internal/web/middleware/handlefunc"
-	"geektime-basic-go/webook/pkg/logger"
+	"geektime-basic-go/webook/pkg/ginx/handlefunc"
 )
 
 const bizLogin = "login"
@@ -27,11 +26,10 @@ type UserHandler struct {
 	emailRegexExp    *regexp.Regexp
 	passwordRegexExp *regexp.Regexp
 	phoneRegexExp    *regexp.Regexp
-	logFunc          handlefunc.LogFunc
 	myjwt.Handler
 }
 
-func NewUserHandler(svc service.UserService, codeSvc service.CodeService, jwtHandler myjwt.Handler, l logger.Logger) *UserHandler {
+func NewUserHandler(svc service.UserService, codeSvc service.CodeService, jwtHandler myjwt.Handler) *UserHandler {
 	const (
 		emailRegexPattern  = `^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$`
 		passwdRegexPattern = `^^(?=.*[0-9])(?=.*[a-zA-Z])[0-9A-Za-z~!@#$%^&*._?]{8,15}$`
@@ -45,7 +43,6 @@ func NewUserHandler(svc service.UserService, codeSvc service.CodeService, jwtHan
 		passwordRegexExp: regexp.MustCompile(passwdRegexPattern, regexp.None),
 		phoneRegexExp:    regexp.MustCompile(phoneRegexPattern, regexp.None),
 		Handler:          jwtHandler,
-		logFunc:          handlefunc.DefaultLogFunc(l),
 	}
 }
 
@@ -56,7 +53,7 @@ func (uh *UserHandler) RegisterRoutes(server *gin.Engine) {
 
 	ug.POST("/signup", uh.SignUp)
 	ug.POST("/login", uh.Login)
-	ug.POST("/edit", handlefunc.WrapReqWithLog[EditReq](uh.Edit, uh.logFunc))
+	ug.POST("/edit", handlefunc.WrapClaimsAndReq[EditReq](uh.Edit))
 	ug.POST("/login_sms/code/send", uh.SendSMSLoginCode)
 	ug.POST("/login_sms", uh.LoginSMS)
 	ug.POST("/refresh_token", uh.RefreshToken)

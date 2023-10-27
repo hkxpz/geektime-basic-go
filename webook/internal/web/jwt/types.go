@@ -3,6 +3,8 @@ package jwt
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+
+	"geektime-basic-go/webook/pkg/ginx/handlefunc"
 )
 
 type Handler interface {
@@ -13,12 +15,7 @@ type Handler interface {
 	ExtractTokenString(ctx *gin.Context) string
 }
 
-type UserClaims struct {
-	ID        int64
-	SSID      string
-	UserAgent string
-	jwt.RegisteredClaims
-}
+type UserClaims = handlefunc.UserClaims
 
 type RefreshClaims struct {
 	ID   int64

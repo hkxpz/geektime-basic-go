@@ -3,7 +3,7 @@ package web
 import (
 	"github.com/gin-gonic/gin"
 
-	"geektime-basic-go/webook/internal/web/middleware/handlefunc"
+	"geektime-basic-go/webook/pkg/ginx/handlefunc"
 )
 
 type handler interface {

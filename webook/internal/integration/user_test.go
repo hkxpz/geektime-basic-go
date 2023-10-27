@@ -117,5 +117,4 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			tc.after(t)
 		})
 	}
-
 }

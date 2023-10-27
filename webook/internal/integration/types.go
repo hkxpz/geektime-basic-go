@@ -1,7 +1,5 @@
 package integration
 
-import (
-	"geektime-basic-go/webook/internal/web/middleware/handlefunc"
-)
+import "geektime-basic-go/webook/pkg/ginx/handlefunc"
 
 type Response = handlefunc.Response
