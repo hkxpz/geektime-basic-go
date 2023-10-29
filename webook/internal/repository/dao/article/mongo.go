@@ -114,3 +114,13 @@ func (dao *mongoDBDAO) GetPubByID(ctx *gin.Context, id int64) (PublishedArticle,
 	err := res.Decode(&pub)
 	return pub, err
 }
+
+func (dao *mongoDBDAO) GetByAuthor(ctx *gin.Context, author int64, offset int, limit int) ([]Article, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (dao *mongoDBDAO) GetByID(ctx *gin.Context, id int64) (Article, error) {
+	//TODO implement me
+	panic("implement me")
+}

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 
+	"github.com/ecodeclub/ekit/slice"
 	"github.com/gin-gonic/gin"
 
 	"geektime-basic-go/webook/internal/domain"
@@ -11,12 +12,15 @@ import (
 	"geektime-basic-go/webook/pkg/logger"
 )
 
+//go:generate mockgen -source=article.go -package=mocks -destination=mocks/acticle_mock_gen.go ArticleRepository
 type ArticleRepository interface {
 	Create(ctx context.Context, art domain.Article) (int64, error)
 	Update(ctx context.Context, art domain.Article) error
 	Sync(ctx context.Context, art domain.Article) (int64, error)
 	SyncStatus(ctx context.Context, uid, id int64, status domain.ArticleStatus) error
 	GetPublishedById(ctx *gin.Context, id int64) (domain.Article, error)
+	GetById(ctx *gin.Context, id int64) (domain.Article, error)
+	List(ctx *gin.Context, author int64, offset int, limit int) ([]domain.Article, error)
 }
 
 type cacheArticleRepository struct {
@@ -161,4 +165,50 @@ func (repo *cacheArticleRepository) GetPublishedById(ctx *gin.Context, id int64)
 		}
 	}()
 	return res, nil
+}
+
+func (repo *cacheArticleRepository) GetById(ctx *gin.Context, id int64) (domain.Article, error) {
+	cachedArt, err := repo.cache.Get(ctx, id)
+	if err == nil {
+		return cachedArt, nil
+	}
+	art, err := repo.dao.GetByID(ctx, id)
+	if err != nil {
+		return domain.Article{}, err
+	}
+	return repo.toDomain(art), nil
+}
+
+func (repo *cacheArticleRepository) List(ctx *gin.Context, author int64, offset int, limit int) ([]domain.Article, error) {
+	if offset == 0 && limit == 100 {
+		data, err := repo.cache.GetFirstPage(ctx, author)
+		if err != nil {
+			repo.l.Error("查询缓存文章失败", logger.Int64("author", author), logger.Error(err))
+		}
+
+		go func() { repo.preCache(ctx, data) }()
+		return data, nil
+	}
+
+	arts, err := repo.dao.GetByAuthor(ctx, author, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+	res := slice.Map[article.Article, domain.Article](arts, func(idx int, src article.Article) domain.Article {
+		return repo.toDomain(arts[idx])
+	})
+	go func() { repo.preCache(ctx, res) }()
+	if err = repo.cache.SetFirstPage(ctx, author, res); err != nil {
+		repo.l.Error("刷新第一页文章的缓存失败", logger.Int64("author", author), logger.Error(err))
+	}
+	return res, nil
+}
+
+func (repo *cacheArticleRepository) preCache(ctx context.Context, arts []domain.Article) {
+	const contentSizeThreshold = 1024 * 1024
+	if len(arts) > 0 && len(arts[0].Content) <= contentSizeThreshold {
+		if err := repo.cache.Set(ctx, arts[0]); err != nil {
+			repo.l.Error("提前准备缓存失败", logger.Error(err))
+		}
+	}
 }

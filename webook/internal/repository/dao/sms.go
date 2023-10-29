@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
+//go:generate mockgen -source=sms.go -package=mocks -destination=mocks/sms_mock_gen.go SMSDao
 type SMSDao interface {
 	Insert(ctx context.Context, sms SMS) error
 	FindByMaxRetryAndStatus(ctx context.Context, maxRetry int64, status int64) ([]SMS, error)

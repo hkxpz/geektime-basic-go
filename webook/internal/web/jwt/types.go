@@ -7,6 +7,7 @@ import (
 	"geektime-basic-go/webook/pkg/ginx/handlefunc"
 )
 
+//go:generate mockgen -source=types.go -package=mocks -destination=mocks/types_mock_gen.go Handler
 type Handler interface {
 	ClearToken(ctx *gin.Context) error
 	SetLoginToken(ctx *gin.Context, uid int64) error

@@ -100,3 +100,20 @@ func (dao *gormDAO) GetPubByID(ctx *gin.Context, id int64) (PublishedArticle, er
 	err := dao.db.WithContext(ctx).Where("id = ?", id).Find(&pub).Error
 	return pub, err
 }
+
+func (dao *gormDAO) GetByAuthor(ctx *gin.Context, author int64, offset int, limit int) ([]Article, error) {
+	var arts []Article
+	err := dao.db.WithContext(ctx).Model(&Article{}).
+		Where("author_id = ?", author).
+		Offset(offset).
+		Limit(limit).
+		Order("update_at DESC").
+		Find(&arts).Error
+	return arts, err
+}
+
+func (dao *gormDAO) GetByID(ctx *gin.Context, id int64) (Article, error) {
+	var art Article
+	err := dao.db.WithContext(ctx).Where("id = ?", id).First(&art).Error
+	return art, err
+}

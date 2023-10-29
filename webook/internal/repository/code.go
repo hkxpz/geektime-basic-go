@@ -11,6 +11,7 @@ var (
 	ErrCodeSendTooMany        = cache.ErrCodeSendTooMany
 )
 
+//go:generate mockgen -source=code.go -package=mocks -destination=mocks/code_mock_gen.go CodeRepository
 type CodeRepository interface {
 	Store(ctx context.Context, biz, phone, code string) error
 	Verify(ctx context.Context, biz, phone, code string) (bool, error)

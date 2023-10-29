@@ -4,16 +4,15 @@ import (
 	"context"
 	"errors"
 
-	"geektime-basic-go/webook/internal/repository/cache"
-
 	"github.com/gin-gonic/gin"
 
 	"geektime-basic-go/webook/internal/domain"
-
+	"geektime-basic-go/webook/internal/repository/cache"
 	"geektime-basic-go/webook/internal/repository/dao"
 	"geektime-basic-go/webook/pkg/logger"
 )
 
+//go:generate mockgen -source=interactive.go -package=mocks -destination=mocks/interactive_mock_gen.go InteractiveRepository
 type InteractiveRepository interface {
 	IncrReadCnt(ctx context.Context, biz string, bizID int64) error
 	IncrLike(ctx *gin.Context, biz string, bizID int64, uid int64) error
@@ -22,6 +21,7 @@ type InteractiveRepository interface {
 	Get(ctx *gin.Context, biz string, bizID int64) (domain.Interactive, error)
 	Liked(ctx *gin.Context, biz string, bizID int64, uid int64) (bool, error)
 	Collected(ctx *gin.Context, biz string, bizID int64, uid int64) (bool, error)
+	BatchIncrReadCnt(ctx context.Context, bizs []string, bizIds []int64) error
 }
 
 type cacheInteractiveRepository struct {
@@ -112,4 +112,8 @@ func (repo *cacheInteractiveRepository) toDomain(intr dao.Interactive) domain.In
 		CollectCnt: intr.CollectCnt,
 		ReadCnt:    intr.ReadCnt,
 	}
+}
+
+func (repo *cacheInteractiveRepository) BatchIncrReadCnt(ctx context.Context, bizs []string, bizIDs []int64) error {
+	return repo.dao.BatchIncrReadCnt(ctx, bizs, bizIDs)
 }

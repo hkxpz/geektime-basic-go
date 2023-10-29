@@ -10,6 +10,7 @@ import (
 	"geektime-basic-go/webook/pkg/logger"
 )
 
+//go:generate mockgen -source=article.go -package=mocks -destination=mocks/article_mock_gen.go ArticleService
 type ArticleService interface {
 	Save(ctx context.Context, art domain.Article) (int64, error)
 	Publish(ctx context.Context, art domain.Article) (int64, error)
@@ -50,11 +51,9 @@ func (svc *articleService) GetPublishedByID(ctx *gin.Context, id int64) (domain.
 }
 
 func (svc *articleService) GetByID(ctx *gin.Context, id int64) (domain.Article, error) {
-	//TODO implement me
-	panic("implement me")
+	return svc.repo.GetById(ctx, id)
 }
 
-func (svc *articleService) List(ctx *gin.Context, id int64, offset int, limit int) ([]domain.Article, error) {
-	//TODO implement me
-	panic("implement me")
+func (svc *articleService) List(ctx *gin.Context, author int64, offset int, limit int) ([]domain.Article, error) {
+	return svc.repo.List(ctx, author, offset, limit)
 }
