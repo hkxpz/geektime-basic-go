@@ -11,6 +11,7 @@ import (
 	"geektime-basic-go/webook/pkg/logger"
 )
 
+//go:generate mockgen -source=interactive.go -package=mocks -destination=mocks/interactive_mock_gen.go InteractiveService
 type InteractiveService interface {
 	IncrReadCnt(ctx context.Context, biz string, bizID int64) error
 	Get(ctx *gin.Context, biz string, bizID int64, uid int64) (domain.Interactive, error)

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ecodeclub/ekit/slice"
-
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sync/errgroup"
 
@@ -180,6 +179,5 @@ func (ah *Handler) Collect(ctx *gin.Context, req CollectReq, uc hf.UserClaims) (
 	if err := ah.intrSvc.Collect(ctx, ah.biz, req.ID, req.CID, uc.ID); err != nil {
 		return hf.InternalServerError(), err
 	}
-
 	return hf.RespSuccess("OK"), nil
 }
