@@ -3,12 +3,10 @@ package service
 import (
 	"context"
 
+	"github.com/gin-gonic/gin"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/gin-gonic/gin"
-
 	"geektime-basic-go/webook/internal/domain"
-
 	"geektime-basic-go/webook/internal/repository"
 	"geektime-basic-go/webook/pkg/logger"
 )
@@ -52,8 +50,8 @@ func (svc *interactiveService) Get(ctx *gin.Context, biz string, bizID int64, ui
 	if err = eg.Wait(); err != nil {
 		svc.l.Error("查询用户是否点赞信息失败",
 			logger.String("biz", biz),
-			logger.Int64("bizID", bizID),
-			logger.Int64("uid", uid),
+			logger.Int("bizID", bizID),
+			logger.Int("uid", uid),
 			logger.Error(err),
 		)
 	}

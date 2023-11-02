@@ -9,7 +9,7 @@ func Error(err error) Field {
 	return Field{Key: "error", Value: err}
 }
 
-func Int64(key string, val int64) Field {
+func Int[T int | int8 | int16 | int32 | int64](key string, val T) Field {
 	return Field{Key: key, Value: val}
 }
 

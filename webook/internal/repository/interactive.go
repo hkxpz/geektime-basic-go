@@ -4,12 +4,10 @@ import (
 	"context"
 	"errors"
 
-	"geektime-basic-go/webook/internal/repository/cache"
-
 	"github.com/gin-gonic/gin"
 
 	"geektime-basic-go/webook/internal/domain"
-
+	"geektime-basic-go/webook/internal/repository/cache"
 	"geektime-basic-go/webook/internal/repository/dao"
 	"geektime-basic-go/webook/pkg/logger"
 )
@@ -22,6 +20,7 @@ type InteractiveRepository interface {
 	Get(ctx *gin.Context, biz string, bizID int64) (domain.Interactive, error)
 	Liked(ctx *gin.Context, biz string, bizID int64, uid int64) (bool, error)
 	Collected(ctx *gin.Context, biz string, bizID int64, uid int64) (bool, error)
+	BatchIncrReadCnt(ctx context.Context, bizs []string, bizIDs []int64) error
 }
 
 type cacheInteractiveRepository struct {
@@ -55,7 +54,7 @@ func (repo *cacheInteractiveRepository) Get(ctx *gin.Context, biz string, bizID 
 	res := repo.toDomain(ie)
 	go func() {
 		if err = repo.cache.Set(ctx, biz, bizID, res); err != nil {
-			repo.l.Error("回写缓存失败", logger.String("biz", biz), logger.Int64("bizID", bizID), logger.Error(err))
+			repo.l.Error("回写缓存失败", logger.String("biz", biz), logger.Int("bizID", bizID), logger.Error(err))
 		}
 	}()
 	return res, nil
@@ -112,4 +111,8 @@ func (repo *cacheInteractiveRepository) toDomain(intr dao.Interactive) domain.In
 		CollectCnt: intr.CollectCnt,
 		ReadCnt:    intr.ReadCnt,
 	}
+}
+
+func (repo *cacheInteractiveRepository) BatchIncrReadCnt(ctx context.Context, bizs []string, bizIDs []int64) error {
+	return repo.dao.BatchIncrReadCnt(ctx, bizs, bizIDs)
 }

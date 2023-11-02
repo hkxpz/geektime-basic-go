@@ -8,12 +8,19 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	_ "github.com/spf13/viper/remote"
 )
 
 func main() {
 	initViper()
-	server := InitWebServer()
+	app := InitApp()
+
+	for _, consumer := range app.consumers {
+		if err := consumer.Start(); err != nil {
+			panic(err)
+		}
+	}
+
+	server := app.web
 	server.GET("/PING", func(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "PONG")
 	})

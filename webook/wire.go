@@ -3,9 +3,9 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 
+	events "geektime-basic-go/webook/internal/events/article"
 	"geektime-basic-go/webook/internal/repository"
 	cache "geektime-basic-go/webook/internal/repository/cache/redis"
 	"geektime-basic-go/webook/internal/repository/dao"
@@ -18,36 +18,80 @@ import (
 	"geektime-basic-go/webook/ioc/sms"
 )
 
-func InitWebServer() *gin.Engine {
+var thirdProvider = wire.NewSet(
+	ioc.InitDB,
+	ioc.InitRedis,
+	ioc.InitZapLogger,
+	ioc.InitKafka,
+	ioc.NewSyncProducer,
+)
+
+var userSvcProvider = wire.NewSet(
+	service.NewUserService,
+	repository.NewUserRepository,
+	dao.NewUserDAO,
+	cache.NewUserCache,
+)
+
+var codeSvcProvider = wire.NewSet(
+	sms.InitSmsSvc,
+	service.NewSMSCodeService,
+	cache.NewCodeCache,
+	repository.NewCodeRepository,
+)
+
+var articleSvcProvider = wire.NewSet(
+	service.NewArticleService,
+	repository.NewCacheArticleRepository,
+	article.NewGormArticleDAO,
+	cache.NewArticleCache,
+)
+
+var interactiveSvcProvider = wire.NewSet(
+	service.NewInteractiveService,
+	repository.NewInteractiveRepository,
+	dao.NewInteractiveDAO,
+	cache.NewInteractiveCache,
+)
+
+var HandlerProvider = wire.NewSet(
+	jwt.NewJWTHandler,
+	web.NewUserHandler,
+	web.NewOAuth2WechatHandler,
+	webarticle.NewArticleHandler,
+)
+
+var eventsProvider = wire.NewSet(
+	events.NewSaramaSyncProducer,
+	events.NewInteractiveReadEventConsumer,
+	ioc.NewConsumers,
+)
+
+func InitApp() *App {
 	wire.Build(
-		ioc.InitDB, ioc.InitRedis, ioc.InitZapLogger,
+		thirdProvider,
 
-		dao.NewUserDAO,
-		article.NewGormArticleDAO,
+		// events 部分
+		eventsProvider,
 
-		cache.NewUserCache,
-		cache.NewCodeCache,
-		cache.NewArticleCache,
-
-		repository.NewUserRepository,
-		repository.NewCodeRepository,
-		repository.NewCacheArticleRepository,
-
-		sms.InitSmsSvc,
-		service.NewUserService,
-		service.NewSMSCodeService,
+		// service
+		userSvcProvider,
+		codeSvcProvider,
+		articleSvcProvider,
+		interactiveSvcProvider,
 		ioc.InitLocalWechatService,
-		service.NewArticleService,
 
-		jwt.NewRedisHandler,
-		web.NewUserHandler,
-		web.NewOAuth2WechatHandler,
-		webarticle.NewArticleHandler,
+		// handler 部分
+		HandlerProvider,
 
+		// gin 的中间件
 		ioc.Middlewares,
 
+		// Web 服务器
 		ioc.InitWebServer,
+
+		wire.Struct(new(App), "*"),
 	)
 
-	return new(gin.Engine)
+	return new(App)
 }

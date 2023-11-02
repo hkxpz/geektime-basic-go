@@ -12,13 +12,20 @@ import (
 	"geektime-basic-go/webook/internal/web/article"
 	myjwt "geektime-basic-go/webook/internal/web/jwt"
 	"geektime-basic-go/webook/internal/web/middleware/login"
+	"geektime-basic-go/webook/pkg/ginx/handlefunc"
 	"geektime-basic-go/webook/pkg/ginx/middleware/accesslog"
 	ginRatelimit "geektime-basic-go/webook/pkg/ginx/middleware/ratelimit"
 	"geektime-basic-go/webook/pkg/logger"
 	"geektime-basic-go/webook/pkg/ratelimit"
 )
 
-func InitWebServer(uh *web.UserHandler, ah *article.Handler, oh *web.OAuth2WechatHandler, fn []gin.HandlerFunc) *gin.Engine {
+func InitWebServer(fn []gin.HandlerFunc,
+	uh *web.UserHandler,
+	ah *article.Handler,
+	oh *web.OAuth2WechatHandler,
+	l logger.Logger,
+) *gin.Engine {
+	handlefunc.SetLogger(l)
 	server := gin.Default()
 	server.Use(fn...)
 	uh.RegisterRoutes(server)

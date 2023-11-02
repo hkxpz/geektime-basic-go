@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -18,13 +17,14 @@ type InteractiveDAO interface {
 	InsertLikeInfo(ctx *gin.Context, biz string, bizID int64, uid int64) error
 	DeleteLikeInfo(ctx *gin.Context, biz string, bizID int64, uid int64) error
 	InsertCollectionBiz(ctx *gin.Context, biz UserCollectionBiz) error
+	BatchIncrReadCnt(ctx context.Context, bizs []string, bizIDs []int64) error
 }
 
 type gormDAO struct {
 	db *gorm.DB
 }
 
-func NewGormDAO(db *gorm.DB) InteractiveDAO {
+func NewInteractiveDAO(db *gorm.DB) InteractiveDAO {
 	return &gormDAO{db: db}
 }
 
@@ -61,9 +61,13 @@ type UserCollectionBiz struct {
 	UpdateAt int64
 }
 
-func (dao *gormDAO) IncrReadCnt(ctx context.Context, biz string, bizID int64) error {
+func (dao *gormDAO) IncrReadCnt(ctx context.Context, biz string, bizId int64) error {
+	return dao.incrReadCnt(dao.db.WithContext(ctx), biz, bizId)
+}
+
+func (dao *gormDAO) incrReadCnt(db *gorm.DB, biz string, bizID int64) error {
 	now := time.Now().UnixMilli()
-	return dao.db.WithContext(ctx).Clauses(clause.OnConflict{
+	return db.Clauses(clause.OnConflict{
 		DoUpdates: clause.Assignments(map[string]interface{}{
 			"read_cut":  gorm.Expr("`read_cnt`+1"),
 			"update_at": now,
@@ -176,5 +180,16 @@ func (dao *gormDAO) InsertCollectionBiz(ctx *gin.Context, cb UserCollectionBiz) 
 			Biz:        cb.Biz,
 			BizID:      cb.BizID,
 		}).Error
+	})
+}
+
+func (dao *gormDAO) BatchIncrReadCnt(ctx context.Context, bizs []string, bizIDs []int64) error {
+	return dao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for i := 0; i < len(bizs); i++ {
+			if err := dao.incrReadCnt(tx, bizs[i], bizIDs[i]); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }

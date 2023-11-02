@@ -21,7 +21,7 @@ type redisHandler struct {
 	rtExpiration time.Duration
 }
 
-func NewRedisHandler(cmd redis.Cmdable) Handler {
+func NewJWTHandler(cmd redis.Cmdable) Handler {
 	return &redisHandler{cmd: cmd, rtExpiration: 7 * 24 * time.Hour}
 }
 

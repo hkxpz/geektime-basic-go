@@ -48,7 +48,7 @@ func (repo *cacheArticleRepository) Create(ctx context.Context, art domain.Artic
 	if err = repo.cache.DelFirstPage(ctx, art.Author.ID); err != nil {
 		repo.l.Error(
 			"删除缓存失败",
-			logger.Int64("author", art.Author.ID),
+			logger.Int("author", art.Author.ID),
 			logger.Error(err),
 		)
 	}
@@ -64,7 +64,7 @@ func (repo *cacheArticleRepository) Update(ctx context.Context, art domain.Artic
 	if err := repo.cache.DelFirstPage(ctx, art.Author.ID); err != nil {
 		repo.l.Error(
 			"删除缓存失败",
-			logger.Int64("author", art.Author.ID),
+			logger.Int("author", art.Author.ID),
 			logger.Error(err),
 		)
 	}
@@ -83,7 +83,7 @@ func (repo *cacheArticleRepository) Sync(ctx context.Context, art domain.Article
 		if err := repo.cache.DelFirstPage(ctx, authorID); err != nil {
 			repo.l.Error(
 				"删除缓存失败",
-				logger.Int64("author", art.Author.ID),
+				logger.Int("author", art.Author.ID),
 				logger.Error(err),
 			)
 		}
@@ -92,7 +92,7 @@ func (repo *cacheArticleRepository) Sync(ctx context.Context, art domain.Article
 		if err != nil {
 			repo.l.Error(
 				"提前设置缓存准备用户信息失败",
-				logger.Int64("uid", authorID),
+				logger.Int("uid", authorID),
 				logger.Error(err),
 			)
 		}
@@ -101,7 +101,7 @@ func (repo *cacheArticleRepository) Sync(ctx context.Context, art domain.Article
 		if err = repo.cache.SetPub(ctx, art); err != nil {
 			repo.l.Error(
 				"提前设置缓存失败",
-				logger.Int64("author", authorID),
+				logger.Int("author", authorID),
 				logger.Error(err),
 			)
 		}
@@ -157,7 +157,7 @@ func (repo *cacheArticleRepository) GetPublishedById(ctx *gin.Context, id int64)
 
 	go func() {
 		if err = repo.cache.SetPub(ctx, res); err != nil {
-			repo.l.Error("缓存已发表文章失败", logger.Error(err), logger.Int64("aid", res.ID))
+			repo.l.Error("缓存已发表文章失败", logger.Error(err), logger.Int("aid", res.ID))
 		}
 	}()
 	return res, nil
