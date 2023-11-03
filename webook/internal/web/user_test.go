@@ -10,10 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/zap"
-
-	"geektime-basic-go/webook/pkg/logger"
-
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	uuid "github.com/lithammer/shortuuid/v4"
@@ -26,7 +22,7 @@ import (
 	"geektime-basic-go/webook/internal/service/mocks"
 	myjwt "geektime-basic-go/webook/internal/web/jwt"
 	jwtmocks "geektime-basic-go/webook/internal/web/jwt/mocks"
-	"geektime-basic-go/webook/internal/web/middleware/handlefunc"
+	"geektime-basic-go/webook/pkg/ginx/handlefunc"
 )
 
 func init() {
@@ -133,7 +129,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			uh := NewUserHandler(tc.mock(ctrl), nil, nil, nil)
+			uh := NewUserHandler(tc.mock(ctrl), nil, nil)
 			server := gin.New()
 			uh.RegisterRoutes(server)
 			req := reqBuilder(t, http.MethodPost, "/users/signup", tc.body)
@@ -243,7 +239,7 @@ func TestUserHandler_Login(t *testing.T) {
 			defer ctrl.Finish()
 
 			us, jh := tc.mock(ctrl)
-			uh := NewUserHandler(us, nil, jh, nil)
+			uh := NewUserHandler(us, nil, jh)
 			req := reqBuilder(t, http.MethodPost, "/users/login", tc.body)
 			recorder := httptest.NewRecorder()
 
@@ -264,7 +260,7 @@ func TestUserHandler_Login(t *testing.T) {
 
 			ctx := gin.CreateTestContextOnly(httptest.NewRecorder(), server)
 			ctx.Request = req
-			err = myjwt.NewRedisHandler(nil).SetLoginToken(ctx, 1)
+			err = myjwt.NewJWTHandler(nil).SetLoginToken(ctx, 1)
 			require.NoError(t, err)
 			assert.Equal(t, ctx.GetHeader("x-jwt-token"), recorder.Header().Get("x-jwt-token"))
 		})
@@ -362,7 +358,7 @@ func TestUserHandler_Edit(t *testing.T) {
 			defer ctrl.Finish()
 
 			us := tc.mock(ctrl)
-			uh := NewUserHandler(us, nil, nil, logger.NewZapLogger(zap.NewNop()))
+			uh := NewUserHandler(us, nil, nil)
 			req := reqBuilder(t, http.MethodPost, "/users/edit", tc.body)
 			recorder := httptest.NewRecorder()
 
@@ -441,7 +437,7 @@ func TestUserHandler_Profile(t *testing.T) {
 			defer ctrl.Finish()
 
 			us := tc.mock(ctrl)
-			uh := NewUserHandler(us, nil, nil, nil)
+			uh := NewUserHandler(us, nil, nil)
 			req := reqBuilder(t, http.MethodGet, "/users/profile", tc.body)
 			recorder := httptest.NewRecorder()
 
@@ -531,7 +527,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 			defer ctrl.Finish()
 
 			cs := tc.mock(ctrl)
-			uh := NewUserHandler(nil, cs, nil, nil)
+			uh := NewUserHandler(nil, cs, nil)
 			req := reqBuilder(t, http.MethodPost, "/users/login_sms/code/send", tc.body)
 			recorder := httptest.NewRecorder()
 
@@ -643,7 +639,7 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 			defer ctrl.Finish()
 
 			us, cs, jh := tc.mock(ctrl)
-			uh := NewUserHandler(us, cs, jh, logger.NewZapLogger(zap.NewNop()))
+			uh := NewUserHandler(us, cs, jh)
 			req := reqBuilder(t, http.MethodPost, "/users/login_sms", tc.body)
 			recorder := httptest.NewRecorder()
 
@@ -776,7 +772,7 @@ func TestUserHandler_RefreshToken(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			uh := NewUserHandler(nil, nil, tc.mock(ctrl), nil)
+			uh := NewUserHandler(nil, nil, tc.mock(ctrl))
 
 			req := reqBuilder(t, http.MethodPost, "/users/refresh_token", nil)
 			recorder := httptest.NewRecorder()
@@ -828,7 +824,7 @@ func TestUserHandler_Logout(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			uh := NewUserHandler(nil, nil, tc.mock(ctrl), logger.NewZapLogger(zap.NewNop()))
+			uh := NewUserHandler(nil, nil, tc.mock(ctrl))
 
 			req := reqBuilder(t, http.MethodPost, "/users/logout", nil)
 			recorder := httptest.NewRecorder()
@@ -869,7 +865,7 @@ func TestEmailPattern(t *testing.T) {
 		},
 	}
 
-	uh := NewUserHandler(nil, nil, nil, nil)
+	uh := NewUserHandler(nil, nil, nil)
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			match, err := uh.emailRegexExp.MatchString(tc.email)
@@ -907,7 +903,7 @@ func TestPasswordPattern(t *testing.T) {
 		},
 	}
 
-	uh := NewUserHandler(nil, nil, nil, nil)
+	uh := NewUserHandler(nil, nil, nil)
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			match, err := uh.phoneRegexExp.MatchString(tc.phone)
@@ -945,7 +941,7 @@ func TestPhonePattern(t *testing.T) {
 		},
 	}
 
-	uh := NewUserHandler(nil, nil, nil, nil)
+	uh := NewUserHandler(nil, nil, nil)
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			match, err := uh.passwordRegexExp.MatchString(tc.password)
