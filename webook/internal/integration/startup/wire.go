@@ -6,68 +6,105 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 
+	events "geektime-basic-go/webook/internal/events/article"
 	"geektime-basic-go/webook/internal/repository"
 	redisCache "geektime-basic-go/webook/internal/repository/cache/redis"
 	"geektime-basic-go/webook/internal/repository/dao"
 	"geektime-basic-go/webook/internal/repository/dao/article"
 	"geektime-basic-go/webook/internal/service"
 	"geektime-basic-go/webook/internal/web"
-	"geektime-basic-go/webook/internal/web/jwt"
+	webarticle "geektime-basic-go/webook/internal/web/article"
+	myjwt "geektime-basic-go/webook/internal/web/jwt"
 	"geektime-basic-go/webook/ioc"
 	"geektime-basic-go/webook/ioc/sms"
 )
 
-var thirdProvider = wire.NewSet(ioc.InitRedis, InitDB, InitLog)
+var thirdProvider = wire.NewSet(
+	InitDB,
+	InitLog,
+	ioc.InitRedis,
+	ioc.InitKafka,
+	ioc.NewSyncProducer,
+)
 
 var userSvcProvider = wire.NewSet(
+	service.NewUserService,
+	repository.NewUserRepository,
 	dao.NewUserDAO,
 	redisCache.NewUserCache,
-	repository.NewUserRepository,
-	service.NewUserService,
 )
 
 var articleSvcProvider = wire.NewSet(
+	service.NewArticleService,
+	repository.NewCacheArticleRepository,
 	article.NewGormArticleDAO,
 	redisCache.NewArticleCache,
-	repository.NewCacheArticleRepository,
-	service.NewArticleService,
+)
+
+var codeSvcProvider = wire.NewSet(
+	sms.InitSmsSvc,
+	service.NewSMSCodeService,
+	repository.NewCodeRepository,
+	redisCache.NewCodeCache,
+)
+
+var interactiveSvcProvider = wire.NewSet(
+	service.NewInteractiveService,
+	repository.NewInteractiveRepository,
+	dao.NewInteractiveDAO,
+	redisCache.NewInteractiveCache,
+)
+
+var eventsProvider = wire.NewSet(
+	events.NewSaramaSyncProducer,
+	events.NewInteractiveReadEventConsumer,
+	ioc.NewConsumers,
+)
+
+var HandlerProvider = wire.NewSet(
+	myjwt.NewJWTHandler,
+	web.NewUserHandler,
+	web.NewOAuth2WechatHandler,
+	webarticle.NewArticleHandler,
 )
 
 func InitWebServer() *gin.Engine {
 	wire.Build(
 		thirdProvider,
+
+		// events 部分
+		eventsProvider,
+
+		// service
 		userSvcProvider,
+		codeSvcProvider,
 		articleSvcProvider,
-
-		repository.NewCodeRepository,
-		redisCache.NewCodeCache,
-
-		// svc
-		sms.InitSmsSvc,
-		service.NewSMSCodeService,
+		interactiveSvcProvider,
 		ioc.InitLocalWechatService,
 
-		// handler
-		jwt.NewRedisHandler,
-		web.NewUserHandler,
-		web.NewOAuth2WechatHandler,
-		web.NewArticleHandler,
+		// handler 部分
+		HandlerProvider,
 
+		// gin 的中间件
 		ioc.Middlewares,
+
+		// Web 服务器
 		ioc.InitWebServer,
 	)
 
 	return gin.Default()
 }
 
-func InitArticleHandler(dao article.DAO) *web.ArticleHandler {
+func InitArticleHandler(dao article.DAO) *webarticle.Handler {
 	wire.Build(
-		userSvcProvider,
 		thirdProvider,
-		redisCache.NewArticleCache,
-		repository.NewCacheArticleRepository,
+		userSvcProvider,
+		interactiveSvcProvider,
+		events.NewSaramaSyncProducer,
 		service.NewArticleService,
-		web.NewArticleHandler,
+		repository.NewCacheArticleRepository,
+		redisCache.NewArticleCache,
+		webarticle.NewArticleHandler,
 	)
-	return new(web.ArticleHandler)
+	return new(webarticle.Handler)
 }

@@ -13,7 +13,7 @@ import (
 	"geektime-basic-go/webook/internal/service"
 	"geektime-basic-go/webook/internal/web"
 	webarticle "geektime-basic-go/webook/internal/web/article"
-	"geektime-basic-go/webook/internal/web/jwt"
+	myjwt "geektime-basic-go/webook/internal/web/jwt"
 	"geektime-basic-go/webook/ioc"
 	"geektime-basic-go/webook/ioc/sms"
 )
@@ -55,7 +55,7 @@ var interactiveSvcProvider = wire.NewSet(
 )
 
 var HandlerProvider = wire.NewSet(
-	jwt.NewJWTHandler,
+	myjwt.NewJWTHandler,
 	web.NewUserHandler,
 	web.NewOAuth2WechatHandler,
 	webarticle.NewArticleHandler,

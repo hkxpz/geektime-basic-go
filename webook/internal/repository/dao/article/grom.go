@@ -4,9 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+
+	"geektime-basic-go/webook/internal/domain"
 )
 
 type gormDAO struct {
@@ -95,13 +96,13 @@ func (dao *gormDAO) SyncStatus(ctx context.Context, uid, id int64, status uint8)
 	})
 }
 
-func (dao *gormDAO) GetPubByID(ctx *gin.Context, id int64) (PublishedArticle, error) {
+func (dao *gormDAO) GetPubByID(ctx context.Context, id int64) (PublishedArticle, error) {
 	var pub PublishedArticle
 	err := dao.db.WithContext(ctx).Where("id = ?", id).Find(&pub).Error
 	return pub, err
 }
 
-func (dao *gormDAO) GetByAuthor(ctx *gin.Context, author int64, offset int, limit int) ([]Article, error) {
+func (dao *gormDAO) GetByAuthor(ctx context.Context, author int64, offset int, limit int) ([]Article, error) {
 	var arts []Article
 	err := dao.db.WithContext(ctx).Model(&Article{}).
 		Where("author_id = ?", author).
@@ -112,8 +113,13 @@ func (dao *gormDAO) GetByAuthor(ctx *gin.Context, author int64, offset int, limi
 	return arts, err
 }
 
-func (dao *gormDAO) GetByID(ctx *gin.Context, id int64) (Article, error) {
+func (dao *gormDAO) GetByID(ctx context.Context, id int64) (Article, error) {
 	var art Article
 	err := dao.db.WithContext(ctx).Where("id = ?", id).First(&art).Error
 	return art, err
+}
+
+func (dao *gormDAO) List(ctx context.Context, author int64, offset int, limit int) ([]domain.Article, error) {
+	//TODO implement me
+	panic("implement me")
 }

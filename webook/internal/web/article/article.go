@@ -23,8 +23,8 @@ type Handler struct {
 	biz     string
 }
 
-func NewArticleHandler(svc service.ArticleService, l logger.Logger) *Handler {
-	return &Handler{svc: svc, l: l}
+func NewArticleHandler(svc service.ArticleService, intrSvc service.InteractiveService, l logger.Logger) *Handler {
+	return &Handler{svc: svc, l: l, biz: "article", intrSvc: intrSvc}
 }
 
 func (ah *Handler) RegisterRoutes(s *gin.Engine) {
@@ -80,7 +80,7 @@ func (ah *Handler) PubDetail(ctx *gin.Context, uc hf.UserClaims) (hf.Response, e
 	)
 
 	eg.Go(func() (err error) {
-		art, err = ah.svc.GetPublishedByID(ctx, id)
+		art, err = ah.svc.GetPublishedByID(ctx, id, uc.ID)
 		return
 	})
 	eg.Go(func() (err error) {
@@ -91,11 +91,6 @@ func (ah *Handler) PubDetail(ctx *gin.Context, uc hf.UserClaims) (hf.Response, e
 		return hf.InternalServerError(), fmt.Errorf("获取文章信息失败: %w", err)
 	}
 
-	go func() {
-		if err = ah.intrSvc.IncrReadCnt(ctx, ah.biz, art.ID); err != nil {
-			ah.l.Error("增加文章阅读数失败", logger.Error(err))
-		}
-	}()
 	return hf.Response{Data: Vo{
 		ID:      art.ID,
 		Title:   art.Title,

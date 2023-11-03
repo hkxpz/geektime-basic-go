@@ -183,7 +183,7 @@ func (repo *cacheArticleRepository) List(ctx *gin.Context, author int64, offset 
 	if offset == 0 && limit == 100 {
 		data, err := repo.cache.GetFirstPage(ctx, author)
 		if err != nil {
-			repo.l.Error("查询缓存文章失败", logger.Int64("author", author), logger.Error(err))
+			repo.l.Error("查询缓存文章失败", logger.Int("author", author), logger.Error(err))
 		}
 
 		go func() { repo.preCache(ctx, data) }()
@@ -199,7 +199,7 @@ func (repo *cacheArticleRepository) List(ctx *gin.Context, author int64, offset 
 	})
 	go func() { repo.preCache(ctx, res) }()
 	if err = repo.cache.SetFirstPage(ctx, author, res); err != nil {
-		repo.l.Error("刷新第一页文章的缓存失败", logger.Int64("author", author), logger.Error(err))
+		repo.l.Error("刷新第一页文章的缓存失败", logger.Int("author", author), logger.Error(err))
 	}
 	return res, nil
 }

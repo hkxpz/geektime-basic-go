@@ -1,5 +1,5 @@
 package article
 
-import "geektime-basic-go/webook/internal/web"
+import "geektime-basic-go/webook/internal/web/article"
 
-type Article = web.ArticleReq
+type Article = article.Req
