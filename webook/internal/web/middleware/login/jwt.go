@@ -16,7 +16,16 @@ type JwtMiddlewareBuilder struct {
 }
 
 func NewJwtLoginMiddlewareBuilder(jwtHandler myjwt.Handler) *JwtMiddlewareBuilder {
-	return &JwtMiddlewareBuilder{publicPaths: set.NewMapSet[string](3), Handler: jwtHandler}
+	s := set.NewMapSet[string](3)
+	s.Add("/users/signup")
+	s.Add("/users/login")
+	s.Add("/users/refresh_token")
+	s.Add("/users/login_sms/code/send")
+	s.Add("/users/login_sms")
+	s.Add("/oauth2/wechat/authurl")
+	s.Add("/oauth2/wechat/callback")
+	s.Add("/PING")
+	return &JwtMiddlewareBuilder{publicPaths: s, Handler: jwtHandler}
 }
 
 func (j *JwtMiddlewareBuilder) SetIgnorePath(paths ...string) MiddlewareBuilder {
