@@ -1,4 +1,4 @@
-local key = KEY[1]
+local key = KEYS[1]
 local cntKey = ARGV[1]
 local delta = tonumber(ARGV[2])
 local exists = redis.call("EXISTS", key)

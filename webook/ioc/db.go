@@ -21,8 +21,8 @@ func InitDB(l logger.Logger) *gorm.DB {
 	}
 	db, err := gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{
 		Logger: glogger.New(gormLoggerFunc(l.Info), glogger.Config{
-			SlowThreshold:        50 * time.Millisecond,
-			LogLevel:             glogger.Info,
+			SlowThreshold:        100 * time.Millisecond,
+			LogLevel:             glogger.Error,
 			ParameterizedQueries: true,
 		}),
 	})

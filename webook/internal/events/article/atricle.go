@@ -61,6 +61,7 @@ func (c *InteractiveReadEventConsumer) Start() error {
 	cg, err := sarama.NewConsumerGroupFromClient("interactive", c.client)
 	if err != nil {
 		c.l.Error("获取消费者组失败", logger.Error(err))
+		return err
 	}
 	go func() {
 		err = cg.Consume(context.Background(), []string{topicReadEvent}, saramax.NewHandler[ReadEvent](c.l, c.Consume))

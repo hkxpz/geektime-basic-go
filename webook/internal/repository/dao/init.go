@@ -9,9 +9,11 @@ import (
 func InitTables(db *gorm.DB) error {
 	return db.AutoMigrate(
 		&User{},
-
-		&SMS{},
-
-		&article.Article{}, &article.PublishedArticle{},
+		&article.Article{},
+		&article.PublishedArticle{},
+		&Interactive{},
+		&UserLikeBiz{},
+		&Collection{},
+		&UserCollectionBiz{},
 	)
 }

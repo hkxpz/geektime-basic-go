@@ -61,6 +61,15 @@ type UserCollectionBiz struct {
 	UpdateAt int64
 }
 
+// Collection 收藏夹
+type Collection struct {
+	Id       int64  `gorm:"primaryKey,autoIncrement"`
+	Name     string `gorm:"type=varchar(1024)"`
+	Uid      int64  `gorm:""`
+	CreateAt int64
+	UpdateAt int64
+}
+
 func (dao *gormDAO) IncrReadCnt(ctx context.Context, biz string, bizId int64) error {
 	return dao.incrReadCnt(dao.db.WithContext(ctx), biz, bizId)
 }
@@ -69,7 +78,7 @@ func (dao *gormDAO) incrReadCnt(db *gorm.DB, biz string, bizID int64) error {
 	now := time.Now().UnixMilli()
 	return db.Clauses(clause.OnConflict{
 		DoUpdates: clause.Assignments(map[string]interface{}{
-			"read_cut":  gorm.Expr("`read_cnt`+1"),
+			"read_cnt":  gorm.Expr("`read_cnt`+1"),
 			"update_at": now,
 		}),
 	}).Create(&Interactive{

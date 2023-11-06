@@ -13,10 +13,9 @@ import (
 	myjwt "geektime-basic-go/webook/internal/web/jwt"
 	"geektime-basic-go/webook/internal/web/middleware/login"
 	"geektime-basic-go/webook/pkg/ginx/handlefunc"
+	"geektime-basic-go/webook/pkg/ginx/metrics"
 	"geektime-basic-go/webook/pkg/ginx/middleware/accesslog"
-	ginRatelimit "geektime-basic-go/webook/pkg/ginx/middleware/ratelimit"
 	"geektime-basic-go/webook/pkg/logger"
-	"geektime-basic-go/webook/pkg/ratelimit"
 )
 
 func InitWebServer(fn []gin.HandlerFunc,
@@ -35,14 +34,19 @@ func InitWebServer(fn []gin.HandlerFunc,
 }
 
 func Middlewares(cmd redis.Cmdable, jwtHandler myjwt.Handler, l logger.Logger) []gin.HandlerFunc {
+	pb := &metrics.PrometheusBuilder{
+		NameSpace:  "hkxpz",
+		Subsystem:  "webook",
+		Name:       "gin_http",
+		InstanceID: "instance-1",
+		Help:       "GIN HTTP 请求",
+	}
 	return []gin.HandlerFunc{
-		ginRatelimit.NewBuilder(ratelimit.NewRedisSlideWindowLimiter(cmd, time.Minute, 100)).Build(),
+		//ginRatelimit.NewBuilder(ratelimit.NewRedisSlideWindowLimiter(cmd, time.Minute, 100)).Build(),
 		corsHandler(),
-		login.NewJwtLoginMiddlewareBuilder(jwtHandler).
-			SetIgnorePath("/users/signup", "/users/login", "/users/refresh_token").
-			SetIgnorePath("/users/login_sms/code/send", "/users/login_sms").
-			SetIgnorePath("/oauth2/wechat/authurl", "/oauth2/wechat/callback").
-			Build(),
+		pb.BuildResponseTime(),
+		pb.BuildActiveRequest(),
+		login.NewJwtLoginMiddlewareBuilder(jwtHandler).Build(),
 		accesslog.NewBuilder(accesslog.DefaultLogFunc(l)).AllowReqBody().AllowRespBody().Build(),
 	}
 }
