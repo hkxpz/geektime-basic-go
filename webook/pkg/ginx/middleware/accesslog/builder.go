@@ -50,11 +50,14 @@ func (b *Builder) SetMaxRespBodyLength(length int) *Builder {
 func (b *Builder) Build() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		start := time.Now()
-
 		log := AccessLog{
 			Method: ctx.Request.Method,
 			Path:   ctx.Request.URL.Path,
 		}
+		defer func() {
+			log.Duration = time.Since(start).String()
+			b.f(ctx, log)
+		}()
 
 		if b.allowReqBody && ctx.Request.Body != nil {
 			rb, _ := ctx.GetRawData()
@@ -72,11 +75,6 @@ func (b *Builder) Build() gin.HandlerFunc {
 				ResponseWriter: ctx.Writer,
 			}
 		}
-
-		defer func() {
-			log.Duration = time.Since(start).String()
-			b.f(ctx, log)
-		}()
 		ctx.Next()
 	}
 }
