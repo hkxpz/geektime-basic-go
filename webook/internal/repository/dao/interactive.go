@@ -4,20 +4,22 @@ import (
 	"context"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 type InteractiveDAO interface {
+	Get(ctx context.Context, biz string, bizID int64) (Interactive, error)
+	GetLikeInfo(ctx context.Context, biz string, bizID int64, uid int64) (UserLikeBiz, error)
+	GetCollectionInfo(ctx context.Context, biz string, bizID int64, uid int64) (UserCollectionBiz, error)
+	InsertCollectionBiz(ctx context.Context, biz UserCollectionBiz) error
 	IncrReadCnt(ctx context.Context, biz string, bizID int64) error
-	Get(ctx *gin.Context, biz string, bizID int64) (Interactive, error)
-	GetLikeInfo(ctx *gin.Context, biz string, bizID int64, uid int64) (UserLikeBiz, error)
-	GetCollectionInfo(ctx *gin.Context, biz string, bizID int64, uid int64) (UserCollectionBiz, error)
-	InsertLikeInfo(ctx *gin.Context, biz string, bizID int64, uid int64) error
-	DeleteLikeInfo(ctx *gin.Context, biz string, bizID int64, uid int64) error
-	InsertCollectionBiz(ctx *gin.Context, biz UserCollectionBiz) error
 	BatchIncrReadCnt(ctx context.Context, bizs []string, bizIDs []int64) error
+	InsertLikeInfo(ctx context.Context, biz string, bizID int64, uid int64) error
+	BatchInsertLikeInfo(ctx context.Context, biz string, bizIDs []int64, uids []int64) error
+	DeleteLikeInfo(ctx context.Context, biz string, bizID int64, uid int64) error
+	BatchDeleteLikeInfo(ctx context.Context, biz string, bizIDs []int64, uids []int64) error
+	GetMultipleLikeCnt(ctx context.Context, biz string, bizIDs []int64) ([]Interactive, error)
 }
 
 type gormDAO struct {
@@ -74,6 +76,17 @@ func (dao *gormDAO) IncrReadCnt(ctx context.Context, biz string, bizId int64) er
 	return dao.incrReadCnt(dao.db.WithContext(ctx), biz, bizId)
 }
 
+func (dao *gormDAO) BatchIncrReadCnt(ctx context.Context, bizs []string, bizIDs []int64) error {
+	return dao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for i := 0; i < len(bizs); i++ {
+			if err := dao.incrReadCnt(tx, bizs[i], bizIDs[i]); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 func (dao *gormDAO) incrReadCnt(db *gorm.DB, biz string, bizID int64) error {
 	now := time.Now().UnixMilli()
 	return db.Clauses(clause.OnConflict{
@@ -90,87 +103,117 @@ func (dao *gormDAO) incrReadCnt(db *gorm.DB, biz string, bizID int64) error {
 	}).Error
 }
 
-func (dao *gormDAO) Get(ctx *gin.Context, biz string, bizID int64) (Interactive, error) {
+func (dao *gormDAO) Get(ctx context.Context, biz string, bizID int64) (Interactive, error) {
 	var res Interactive
 	err := dao.db.WithContext(ctx).Where("biz = ? AND biz_id = ?", biz, bizID).Find(&res).Error
 	return res, err
 }
 
-func (dao *gormDAO) GetLikeInfo(ctx *gin.Context, biz string, bizID int64, uid int64) (UserLikeBiz, error) {
+func (dao *gormDAO) GetLikeInfo(ctx context.Context, biz string, bizID int64, uid int64) (UserLikeBiz, error) {
 	var res UserLikeBiz
-	err := dao.db.WithContext(ctx).Where("biz = ? AND biz_id = ? AND status = ?", biz, bizID, 1).Error
+	err := dao.db.WithContext(ctx).Where("biz=? AND biz_id = ? AND uid = ? AND status = ?", biz, bizID, uid, 1).First(&res).Error
 	return res, err
 }
 
-func (dao *gormDAO) GetCollectionInfo(ctx *gin.Context, biz string, bizID int64, uid int64) (UserCollectionBiz, error) {
+func (dao *gormDAO) GetCollectionInfo(ctx context.Context, biz string, bizID int64, uid int64) (UserCollectionBiz, error) {
 	var res UserCollectionBiz
 	err := dao.db.WithContext(ctx).Where("biz = ? AND biz_id = ? AND uid = ?", biz, bizID, uid).Error
 	return res, err
 }
 
-func (dao *gormDAO) InsertLikeInfo(ctx *gin.Context, biz string, bizID int64, uid int64) error {
-	now := time.Now().UnixMilli()
+func (dao *gormDAO) InsertLikeInfo(ctx context.Context, biz string, bizID int64, uid int64) error {
 	return dao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		err := tx.Clauses(clause.OnConflict{
-			DoUpdates: clause.Assignments(map[string]interface{}{
-				"status":    1,
-				"update_at": now,
-			}),
-		}).Create(&UserLikeBiz{
-			BizID:    bizID,
-			Biz:      biz,
-			UID:      uid,
-			Status:   1,
-			CreateAt: now,
-			UpdateAt: now,
-		}).Error
-		if err != nil {
-			return err
-		}
-
-		return tx.Clauses(clause.OnConflict{
-			DoUpdates: clause.Assignments(map[string]interface{}{
-				"like_cnt":  gorm.Expr("`like_cnt`+1"),
-				"update_at": now,
-			}),
-		}).Create(&Interactive{
-			BizID:    bizID,
-			Biz:      biz,
-			LikeCnt:  1,
-			CreateAt: now,
-			UpdateAt: now,
-		}).Error
+		return dao.insertLikeInfo(tx, biz, bizID, uid)
 	})
 }
 
-func (dao *gormDAO) DeleteLikeInfo(ctx *gin.Context, biz string, bizID int64, uid int64) error {
-	now := time.Now().UnixMilli()
+func (dao *gormDAO) BatchInsertLikeInfo(ctx context.Context, biz string, bizIDs []int64, uids []int64) error {
 	return dao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		err := tx.Model(&UserLikeBiz{}).
-			Where("biz = ? AND biz_id = ? AND uid = ?", biz, bizID, uid).
-			Updates(map[string]any{
-				"status":    0,
-				"update_at": now,
-			}).Error
-		if err != nil {
-			return err
+		for i := 0; i < len(bizIDs); i++ {
+			if err := dao.insertLikeInfo(tx, biz, bizIDs[i], uids[i]); err != nil {
+				return err
+			}
 		}
-		return dao.db.WithContext(ctx).Clauses(clause.OnConflict{
-			DoUpdates: clause.Assignments(map[string]any{
-				"like_cnt":  gorm.Expr("`like_cnt`-1"),
-				"update_at": now,
-			}),
-		}).Create(&Interactive{
-			LikeCnt:  1,
-			CreateAt: now,
-			UpdateAt: now,
-			Biz:      biz,
-			BizID:    bizID,
-		}).Error
+		return nil
 	})
 }
 
-func (dao *gormDAO) InsertCollectionBiz(ctx *gin.Context, cb UserCollectionBiz) error {
+func (dao *gormDAO) insertLikeInfo(db *gorm.DB, biz string, bizID int64, uid int64) error {
+	now := time.Now().UnixMilli()
+	err := db.Clauses(clause.OnConflict{
+		DoUpdates: clause.Assignments(map[string]interface{}{
+			"status":    1,
+			"update_at": now,
+		}),
+	}).Create(&UserLikeBiz{
+		BizID:    bizID,
+		Biz:      biz,
+		UID:      uid,
+		Status:   1,
+		CreateAt: now,
+		UpdateAt: now,
+	}).Error
+	if err != nil {
+		return err
+	}
+
+	return db.Clauses(clause.OnConflict{
+		DoUpdates: clause.Assignments(map[string]interface{}{
+			"like_cnt":  gorm.Expr("`like_cnt`+1"),
+			"update_at": now,
+		}),
+	}).Create(&Interactive{
+		BizID:    bizID,
+		Biz:      biz,
+		LikeCnt:  1,
+		CreateAt: now,
+		UpdateAt: now,
+	}).Error
+}
+
+func (dao *gormDAO) DeleteLikeInfo(ctx context.Context, biz string, bizID int64, uid int64) error {
+	return dao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return dao.deleteLikeInfo(tx, biz, bizID, uid)
+	})
+}
+
+func (dao *gormDAO) BatchDeleteLikeInfo(ctx context.Context, biz string, bizIDs []int64, uids []int64) error {
+	return dao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for i := 0; i < len(bizIDs); i++ {
+			if err := dao.deleteLikeInfo(tx, biz, bizIDs[i], uids[i]); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func (dao *gormDAO) deleteLikeInfo(db *gorm.DB, biz string, bizID int64, uid int64) error {
+	now := time.Now().UnixMilli()
+	err := db.Model(&UserLikeBiz{}).
+		Where("biz = ? AND biz_id = ? AND uid = ?", biz, bizID, uid).
+		Updates(map[string]any{
+			"status":    0,
+			"update_at": now,
+		}).Error
+	if err != nil {
+		return err
+	}
+	return db.Clauses(clause.OnConflict{
+		DoUpdates: clause.Assignments(map[string]any{
+			"like_cnt":  gorm.Expr("`like_cnt`-1"),
+			"update_at": now,
+		}),
+	}).Create(&Interactive{
+		LikeCnt:  1,
+		CreateAt: now,
+		UpdateAt: now,
+		Biz:      biz,
+		BizID:    bizID,
+	}).Error
+}
+
+func (dao *gormDAO) InsertCollectionBiz(ctx context.Context, cb UserCollectionBiz) error {
 	now := time.Now().UnixMilli()
 	cb.CreateAt, cb.UpdateAt = now, now
 	return dao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -192,13 +235,11 @@ func (dao *gormDAO) InsertCollectionBiz(ctx *gin.Context, cb UserCollectionBiz) 
 	})
 }
 
-func (dao *gormDAO) BatchIncrReadCnt(ctx context.Context, bizs []string, bizIDs []int64) error {
-	return dao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		for i := 0; i < len(bizs); i++ {
-			if err := dao.incrReadCnt(tx, bizs[i], bizIDs[i]); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
+func (dao *gormDAO) GetMultipleLikeCnt(ctx context.Context, biz string, bizIDs []int64) ([]Interactive, error) {
+	res := make([]Interactive, 0, len(bizIDs))
+	err := dao.db.WithContext(ctx).Model(UserLikeBiz{}).Select("biz_id,count(*) as like_cnt").
+		Where("biz = ? AND biz_id IN ? AND status = 1", biz, bizIDs).
+		Group("biz_id").
+		Find(&res).Error
+	return res, err
 }

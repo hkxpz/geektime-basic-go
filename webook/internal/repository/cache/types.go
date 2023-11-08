@@ -3,8 +3,6 @@ package cache
 import (
 	"context"
 
-	"github.com/gin-gonic/gin"
-
 	"geektime-basic-go/webook/internal/domain"
 )
 
@@ -27,18 +25,21 @@ type CodeCache interface {
 type ArticleCache interface {
 	DelFirstPage(ctx context.Context, author int64) error
 	SetPub(ctx context.Context, article domain.Article) error
-	GetPub(ctx *gin.Context, id int64) (domain.Article, error)
-	GetFirstPage(ctx *gin.Context, author int64) ([]domain.Article, error)
-	SetFirstPage(ctx *gin.Context, author int64, arts []domain.Article) error
-	Get(ctx *gin.Context, id int64) (domain.Article, error)
+	GetPub(ctx context.Context, id int64) (domain.Article, error)
+	GetFirstPage(ctx context.Context, author int64) ([]domain.Article, error)
+	SetFirstPage(ctx context.Context, author int64, arts []domain.Article) error
+	Get(ctx context.Context, id int64) (domain.Article, error)
 	Set(ctx context.Context, article domain.Article) error
 }
 
 type InteractiveCache interface {
-	Get(ctx *gin.Context, biz string, bizID int64) (domain.Interactive, error)
-	Set(ctx *gin.Context, biz string, bizID int64, intr domain.Interactive) error
+	Get(ctx context.Context, biz string, bizID int64) (domain.Interactive, error)
+	Set(ctx context.Context, biz string, bizID int64, intr domain.Interactive) error
 	IncrReadCntIfPresent(ctx context.Context, biz string, bizID int64) error
-	DecrLikeCntIfPresent(ctx *gin.Context, biz string, bizID int64) error
-	IncrLikeCntIfPresent(ctx *gin.Context, biz string, bizID int64) error
-	IncrCollectCntIfPresent(ctx *gin.Context, biz string, bizID int64) error
+	DecrLikeCntIfPresent(ctx context.Context, biz string, bizID int64) error
+	IncrLikeCntIfPresent(ctx context.Context, biz string, bizID int64) error
+	IncrCollectCntIfPresent(ctx context.Context, biz string, bizID int64) error
+	BatchIncrLikeCntIfPresent(ctx context.Context, biz string, bizIDs []int64) error
+	BatchDecrLikeCntIfPresent(ctx context.Context, biz string, bizIDs []int64) error
+	BatchSetLikeCnt(ctx context.Context, biz string, bizIDs []int64, cnts []int64) ([]string, error)
 }

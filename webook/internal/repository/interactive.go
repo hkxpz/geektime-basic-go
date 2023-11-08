@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 	"errors"
-
-	"github.com/gin-gonic/gin"
+	"fmt"
+	"sync"
 
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/repository/cache"
@@ -14,19 +14,22 @@ import (
 
 type InteractiveRepository interface {
 	IncrReadCnt(ctx context.Context, biz string, bizID int64) error
-	IncrLike(ctx *gin.Context, biz string, bizID int64, uid int64) error
-	DecrLike(ctx *gin.Context, biz string, bizID int64, uid int64) error
-	AddCollectionItem(ctx *gin.Context, biz string, bizID int64, cid int64, uid int64) error
-	Get(ctx *gin.Context, biz string, bizID int64) (domain.Interactive, error)
-	Liked(ctx *gin.Context, biz string, bizID int64, uid int64) (bool, error)
-	Collected(ctx *gin.Context, biz string, bizID int64, uid int64) (bool, error)
+	IncrLike(ctx context.Context, biz string, bizID int64, uid int64) error
+	DecrLike(ctx context.Context, biz string, bizID int64, uid int64) error
+	AddCollectionItem(ctx context.Context, biz string, bizID int64, cid int64, uid int64) error
+	Get(ctx context.Context, biz string, bizID int64) (domain.Interactive, error)
+	Liked(ctx context.Context, biz string, bizID int64, uid int64) (bool, error)
+	Collected(ctx context.Context, biz string, bizID int64, uid int64) (bool, error)
 	BatchIncrReadCnt(ctx context.Context, bizs []string, bizIDs []int64) error
+	BatchIncrLike(ctx context.Context, biz string, bizIDs []int64, uids []int64) error
+	BatchDecrLike(ctx context.Context, biz string, bizIDs []int64, uids []int64) error
 }
 
 type cacheInteractiveRepository struct {
 	cache cache.InteractiveCache
 	dao   dao.InteractiveDAO
 	l     logger.Logger
+	m     sync.Map
 }
 
 func NewInteractiveRepository(cache cache.InteractiveCache, dao dao.InteractiveDAO, l logger.Logger) InteractiveRepository {
@@ -41,7 +44,7 @@ func (repo *cacheInteractiveRepository) IncrReadCnt(ctx context.Context, biz str
 	return repo.cache.IncrReadCntIfPresent(ctx, biz, bizID)
 }
 
-func (repo *cacheInteractiveRepository) Get(ctx *gin.Context, biz string, bizID int64) (domain.Interactive, error) {
+func (repo *cacheInteractiveRepository) Get(ctx context.Context, biz string, bizID int64) (domain.Interactive, error) {
 	intr, err := repo.cache.Get(ctx, biz, bizID)
 	if err == nil {
 		return intr, err
@@ -60,7 +63,7 @@ func (repo *cacheInteractiveRepository) Get(ctx *gin.Context, biz string, bizID 
 	return res, nil
 }
 
-func (repo *cacheInteractiveRepository) Liked(ctx *gin.Context, biz string, bizID int64, uid int64) (bool, error) {
+func (repo *cacheInteractiveRepository) Liked(ctx context.Context, biz string, bizID int64, uid int64) (bool, error) {
 	_, err := repo.dao.GetLikeInfo(ctx, biz, bizID, uid)
 	switch {
 	case err == nil:
@@ -72,7 +75,7 @@ func (repo *cacheInteractiveRepository) Liked(ctx *gin.Context, biz string, bizI
 	}
 }
 
-func (repo *cacheInteractiveRepository) Collected(ctx *gin.Context, biz string, bizID int64, uid int64) (bool, error) {
+func (repo *cacheInteractiveRepository) Collected(ctx context.Context, biz string, bizID int64, uid int64) (bool, error) {
 	_, err := repo.dao.GetCollectionInfo(ctx, biz, bizID, uid)
 	switch {
 	case err == nil:
@@ -84,21 +87,21 @@ func (repo *cacheInteractiveRepository) Collected(ctx *gin.Context, biz string, 
 	}
 }
 
-func (repo *cacheInteractiveRepository) DecrLike(ctx *gin.Context, biz string, bizID int64, uid int64) error {
+func (repo *cacheInteractiveRepository) DecrLike(ctx context.Context, biz string, bizID int64, uid int64) error {
 	if err := repo.dao.DeleteLikeInfo(ctx, biz, bizID, uid); err != nil {
 		return err
 	}
 	return repo.cache.DecrLikeCntIfPresent(ctx, biz, bizID)
 }
 
-func (repo *cacheInteractiveRepository) IncrLike(ctx *gin.Context, biz string, bizID int64, uid int64) error {
+func (repo *cacheInteractiveRepository) IncrLike(ctx context.Context, biz string, bizID int64, uid int64) error {
 	if err := repo.dao.InsertLikeInfo(ctx, biz, bizID, uid); err != nil {
 		return err
 	}
 	return repo.cache.IncrLikeCntIfPresent(ctx, biz, bizID)
 }
 
-func (repo *cacheInteractiveRepository) AddCollectionItem(ctx *gin.Context, biz string, bizID int64, cid int64, uid int64) error {
+func (repo *cacheInteractiveRepository) AddCollectionItem(ctx context.Context, biz string, bizID int64, cid int64, uid int64) error {
 	if err := repo.dao.InsertCollectionBiz(ctx, dao.UserCollectionBiz{CID: cid, BizID: bizID, Biz: biz, UID: uid}); err != nil {
 		return err
 	}
@@ -115,4 +118,67 @@ func (repo *cacheInteractiveRepository) toDomain(intr dao.Interactive) domain.In
 
 func (repo *cacheInteractiveRepository) BatchIncrReadCnt(ctx context.Context, bizs []string, bizIDs []int64) error {
 	return repo.dao.BatchIncrReadCnt(ctx, bizs, bizIDs)
+}
+
+func (repo *cacheInteractiveRepository) BatchIncrLike(ctx context.Context, biz string, bizIDs []int64, uids []int64) error {
+	if err := repo.dao.BatchInsertLikeInfo(ctx, biz, bizIDs, uids); err != nil {
+		return err
+	}
+
+	existBizIDs, doesNotExistBizIDs := repo.checkExists(biz, bizIDs)
+	if err := repo.cache.BatchIncrLikeCntIfPresent(ctx, biz, existBizIDs); err != nil {
+		return err
+	}
+	return repo.setLikeCntIfDoesNotExist(ctx, biz, doesNotExistBizIDs)
+}
+
+func (repo *cacheInteractiveRepository) BatchDecrLike(ctx context.Context, biz string, bizIDs []int64, uids []int64) error {
+	if err := repo.dao.BatchDeleteLikeInfo(ctx, biz, bizIDs, uids); err != nil {
+		return err
+	}
+
+	existBizIDs, doesNotExistBizIDs := repo.checkExists(biz, bizIDs)
+	if err := repo.cache.BatchDecrLikeCntIfPresent(ctx, biz, existBizIDs); err != nil {
+		return err
+	}
+	return repo.setLikeCntIfDoesNotExist(ctx, biz, doesNotExistBizIDs)
+}
+
+func (repo *cacheInteractiveRepository) setLikeCntIfDoesNotExist(ctx context.Context, biz string, bizIDs []int64) error {
+	res, err := repo.dao.GetMultipleLikeCnt(ctx, biz, bizIDs)
+	if err != nil {
+		return err
+	}
+
+	cnts := make([]int64, len(res))
+	setBizIDs := make([]int64, len(res))
+	for idx := range res {
+		cnts[idx] = res[idx].LikeCnt
+		setBizIDs[idx] = res[idx].BizID
+	}
+
+	popKeys, err := repo.cache.BatchSetLikeCnt(ctx, biz, setBizIDs, cnts)
+	for _, popKey := range popKeys {
+		repo.m.Delete(popKey)
+	}
+	return err
+}
+
+func (repo *cacheInteractiveRepository) checkExists(biz string, bizIDs []int64) ([]int64, []int64) {
+	existBizIDs := make([]int64, 0, len(bizIDs))
+	doesNotExistBizIDs := make([]int64, 0, len(bizIDs))
+	for _, bizID := range bizIDs {
+		key := repo.key(biz, bizID)
+		if _, ok := repo.m.Load(key); ok {
+			existBizIDs = append(existBizIDs, bizID)
+			continue
+		}
+		doesNotExistBizIDs = append(doesNotExistBizIDs, bizID)
+		repo.m.Store(key, struct{}{})
+	}
+	return existBizIDs, doesNotExistBizIDs
+}
+
+func (repo *cacheInteractiveRepository) key(biz string, bizID int64) string {
+	return fmt.Sprintf("interactive:%s:%d", biz, bizID)
 }
