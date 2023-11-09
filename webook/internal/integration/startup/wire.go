@@ -58,6 +58,7 @@ var interactiveSvcProvider = wire.NewSet(
 var eventsProvider = wire.NewSet(
 	events.NewSaramaSyncProducer,
 	events.NewInteractiveReadEventConsumer,
+	events.NewChangeLikeSaramaSyncProducer,
 	ioc.NewConsumers,
 )
 
@@ -101,6 +102,22 @@ func InitArticleHandler(dao article.DAO) *webarticle.Handler {
 		userSvcProvider,
 		interactiveSvcProvider,
 		events.NewSaramaSyncProducer,
+		events.NewChangeLikeSaramaSyncProducer,
+		service.NewArticleService,
+		repository.NewCacheArticleRepository,
+		redisCache.NewArticleCache,
+		webarticle.NewArticleHandler,
+	)
+	return new(webarticle.Handler)
+}
+
+func InitArticleHandlerWithKafka(dao article.DAO) *webarticle.Handler {
+	wire.Build(
+		thirdProvider,
+		userSvcProvider,
+		interactiveSvcProvider,
+		events.NewSaramaSyncProducer,
+		events.NewChangeLikeSaramaSyncProducer,
 		service.NewArticleService,
 		repository.NewCacheArticleRepository,
 		redisCache.NewArticleCache,

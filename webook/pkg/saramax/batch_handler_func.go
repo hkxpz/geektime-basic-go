@@ -64,6 +64,9 @@ func (b *BatchHandler[T]) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 		}
 
 		cancel()
+		if len(msgs) < 1 {
+			continue
+		}
 		if err := b.fn(msgs, ts); err != nil {
 			// 这里可以考虑重试，也可以在具体的业务逻辑里面重试
 			// 也就是 eg.Go 里面重试

@@ -11,20 +11,22 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"geektime-basic-go/webook/internal/domain"
+	events "geektime-basic-go/webook/internal/events/article"
 	"geektime-basic-go/webook/internal/service"
 	hf "geektime-basic-go/webook/pkg/ginx/handlefunc"
 	"geektime-basic-go/webook/pkg/logger"
 )
 
 type Handler struct {
-	svc     service.ArticleService
-	intrSvc service.InteractiveService
-	l       logger.Logger
-	biz     string
+	svc      service.ArticleService
+	intrSvc  service.InteractiveService
+	producer events.ChangeLikeProducer
+	l        logger.Logger
+	biz      string
 }
 
-func NewArticleHandler(svc service.ArticleService, intrSvc service.InteractiveService, l logger.Logger) *Handler {
-	return &Handler{svc: svc, l: l, biz: "article", intrSvc: intrSvc}
+func NewArticleHandler(svc service.ArticleService, intrSvc service.InteractiveService, l logger.Logger, producer events.ChangeLikeProducer) *Handler {
+	return &Handler{svc: svc, l: l, biz: "article", intrSvc: intrSvc, producer: producer}
 }
 
 func (ah *Handler) RegisterRoutes(s *gin.Engine) {
@@ -157,13 +159,18 @@ func (ah *Handler) List(ctx *gin.Context, req LimitReq, uc hf.UserClaims) (hf.Re
 }
 
 func (ah *Handler) Like(ctx *gin.Context, req LikeReq, uc hf.UserClaims) (hf.Response, error) {
-	var err error
-	if req.Like {
-		err = ah.intrSvc.Like(ctx, ah.biz, req.ID, uc.ID)
-	} else {
-		err = ah.intrSvc.CancelLike(ctx, ah.biz, req.ID, uc.ID)
-	}
-
+	err := ah.producer.ProduceChangeLikeEvent(events.ChangeLikeEvent{
+		Aid:   req.ID,
+		Uid:   uc.ID,
+		Liked: req.Like,
+	})
+	//var err error
+	//if req.Like {
+	//	err = ah.intrSvc.Like(ctx, ah.biz, req.ID, uc.ID)
+	//} else {
+	//	err = ah.intrSvc.CancelLike(ctx, ah.biz, req.ID, uc.ID)
+	//}
+	//
 	if err != nil {
 		return hf.InternalServerError(), err
 	}
