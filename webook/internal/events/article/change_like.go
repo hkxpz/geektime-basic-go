@@ -17,7 +17,7 @@ import (
 const topicChangeLike = "article_change_like_event"
 
 type ChangeLikeEvent struct {
-	Aid   int64
+	BizID int64
 	Uid   int64
 	Liked bool
 }
@@ -42,7 +42,7 @@ func (p *changeLikeSaramaSyncProducer) ProduceChangeLikeEvent(evt ChangeLikeEven
 
 	_, _, err = p.producer.SendMessage(&sarama.ProducerMessage{
 		Topic: topicChangeLike,
-		Key:   sarama.ByteEncoder(val),
+		Value: sarama.ByteEncoder(val),
 	})
 	return err
 }
@@ -78,9 +78,9 @@ func (c *ChangeLikeEventConsumer) Consume(msg *sarama.ConsumerMessage, evt Chang
 	defer cancel()
 
 	if evt.Liked {
-		return c.repo.IncrLike(ctx, "article", evt.Aid, evt.Uid)
+		return c.repo.IncrLike(ctx, "article", evt.BizID, evt.Uid)
 	}
-	return c.repo.DecrLike(ctx, "article", evt.Aid, evt.Uid)
+	return c.repo.DecrLike(ctx, "article", evt.BizID, evt.Uid)
 }
 
 func (c *ChangeLikeEventConsumer) BatchConsume(msgs []*sarama.ConsumerMessage, evts []ChangeLikeEvent) error {
@@ -93,12 +93,12 @@ func (c *ChangeLikeEventConsumer) BatchConsume(msgs []*sarama.ConsumerMessage, e
 
 	for _, evt := range evts {
 		if evt.Liked {
-			likeAids = append(likeAids, evt.Aid)
+			likeAids = append(likeAids, evt.BizID)
 			likeUids = append(likeUids, evt.Uid)
 			continue
 		}
 
-		unlikeAids = append(unlikeAids, evt.Aid)
+		unlikeAids = append(unlikeAids, evt.BizID)
 		unlikeUids = append(unlikeUids, evt.Uid)
 	}
 

@@ -21,7 +21,8 @@ import (
 
 var thirdProvider = wire.NewSet(
 	InitDB,
-	InitLog,
+	//InitLog,
+	ioc.InitZapLogger,
 	ioc.InitRedis,
 	ioc.InitKafka,
 	ioc.NewSyncProducer,
@@ -58,6 +59,7 @@ var interactiveSvcProvider = wire.NewSet(
 var eventsProvider = wire.NewSet(
 	events.NewSaramaSyncProducer,
 	events.NewInteractiveReadEventConsumer,
+	events.NewInteractiveLikeEventConsumer,
 	events.NewChangeLikeSaramaSyncProducer,
 	ioc.NewConsumers,
 )
@@ -96,7 +98,7 @@ func InitWebServer() *gin.Engine {
 	return gin.Default()
 }
 
-func InitArticleHandler(dao article.DAO) *webarticle.Handler {
+func InitArticleHandlerWithDAO(dao article.DAO) *webarticle.Handler {
 	wire.Build(
 		thirdProvider,
 		userSvcProvider,
@@ -111,17 +113,25 @@ func InitArticleHandler(dao article.DAO) *webarticle.Handler {
 	return new(webarticle.Handler)
 }
 
-func InitArticleHandlerWithKafka(dao article.DAO) *webarticle.Handler {
+func InitArticleHandlerWithKafka() *webarticle.Handler {
 	wire.Build(
 		thirdProvider,
 		userSvcProvider,
 		interactiveSvcProvider,
+		articleSvcProvider,
 		events.NewSaramaSyncProducer,
 		events.NewChangeLikeSaramaSyncProducer,
-		service.NewArticleService,
-		repository.NewCacheArticleRepository,
-		redisCache.NewArticleCache,
 		webarticle.NewArticleHandler,
 	)
 	return new(webarticle.Handler)
+}
+
+func InitInteractiveLikeEventConsumer() *events.ChangeLikeEventConsumer {
+	wire.Build(
+		thirdProvider,
+		interactiveSvcProvider,
+		events.NewInteractiveLikeEventConsumer,
+	)
+
+	return new(events.ChangeLikeEventConsumer)
 }

@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 
-	"github.com/gin-gonic/gin"
 	"golang.org/x/sync/errgroup"
 
 	"geektime-basic-go/webook/internal/domain"
+	events "geektime-basic-go/webook/internal/events/article"
 	"geektime-basic-go/webook/internal/repository"
 	"geektime-basic-go/webook/pkg/logger"
 )
@@ -14,26 +14,26 @@ import (
 //go:generate mockgen -source=interactive.go -package=mocks -destination=mocks/interactive_mock_gen.go InteractiveService
 type InteractiveService interface {
 	IncrReadCnt(ctx context.Context, biz string, bizID int64) error
-	Get(ctx *gin.Context, biz string, bizID int64, uid int64) (domain.Interactive, error)
-	CancelLike(ctx *gin.Context, biz string, bizID int64, uid int64) error
-	Like(ctx *gin.Context, biz string, bizID int64, uid int64) error
-	Collect(ctx *gin.Context, biz string, bizID int64, cid int64, uid int64) error
+	Get(ctx context.Context, biz string, bizID int64, uid int64) (domain.Interactive, error)
+	Like(ctx context.Context, biz string, bizID int64, uid int64, like bool) error
+	Collect(ctx context.Context, biz string, bizID int64, cid int64, uid int64) error
 }
 
 type interactiveService struct {
-	repo repository.InteractiveRepository
-	l    logger.Logger
+	repo     repository.InteractiveRepository
+	producer events.ChangeLikeProducer
+	l        logger.Logger
 }
 
-func NewInteractiveService(repo repository.InteractiveRepository, l logger.Logger) InteractiveService {
-	return &interactiveService{repo: repo, l: l}
+func NewInteractiveService(repo repository.InteractiveRepository, producer events.ChangeLikeProducer, l logger.Logger) InteractiveService {
+	return &interactiveService{repo: repo, producer: producer, l: l}
 }
 
 func (svc *interactiveService) IncrReadCnt(ctx context.Context, biz string, bizID int64) error {
 	return svc.repo.IncrReadCnt(ctx, biz, bizID)
 }
 
-func (svc *interactiveService) Get(ctx *gin.Context, biz string, bizID int64, uid int64) (domain.Interactive, error) {
+func (svc *interactiveService) Get(ctx context.Context, biz string, bizID int64, uid int64) (domain.Interactive, error) {
 	intr, err := svc.repo.Get(ctx, biz, bizID)
 	if err != nil {
 		return domain.Interactive{}, err
@@ -59,14 +59,14 @@ func (svc *interactiveService) Get(ctx *gin.Context, biz string, bizID int64, ui
 	return intr, err
 }
 
-func (svc *interactiveService) CancelLike(ctx *gin.Context, biz string, bizID int64, uid int64) error {
+func (svc *interactiveService) CancelLike(ctx context.Context, biz string, bizID int64, uid int64) error {
 	return svc.repo.DecrLike(ctx, biz, bizID, uid)
 }
 
-func (svc *interactiveService) Like(ctx *gin.Context, biz string, bizID int64, uid int64) error {
-	return svc.repo.IncrLike(ctx, biz, bizID, uid)
+func (svc *interactiveService) Like(ctx context.Context, biz string, bizID int64, uid int64, like bool) error {
+	return svc.producer.ProduceChangeLikeEvent(events.ChangeLikeEvent{BizID: bizID, Uid: uid, Liked: like})
 }
 
-func (svc *interactiveService) Collect(ctx *gin.Context, biz string, bizID int64, cid int64, uid int64) error {
+func (svc *interactiveService) Collect(ctx context.Context, biz string, bizID int64, cid int64, uid int64) error {
 	return svc.repo.AddCollectionItem(ctx, biz, bizID, cid, uid)
 }

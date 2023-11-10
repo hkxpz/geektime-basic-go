@@ -29,7 +29,7 @@ func (b *BatchHandler[T]) Cleanup(session sarama.ConsumerGroupSession) error {
 
 func (b *BatchHandler[T]) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	msgCh := claim.Messages()
-	const batchSize = 10
+	const batchSize = 20
 	for {
 		msgs := make([]*sarama.ConsumerMessage, 0, batchSize)
 		ts := make([]T, 0, batchSize)

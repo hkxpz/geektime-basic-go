@@ -20,6 +20,8 @@ const (
 	fieldLikeCnt    = "like_cnt"
 )
 
+const topLimit = 5000
+
 var (
 	//go:embed lua/interactive_incr_cnt.lua
 	luaIncrCnt string
@@ -112,7 +114,7 @@ func (cache *interactiveCache) BatchSetLikeCnt(ctx context.Context, biz string, 
 		pipeClient.ZAdd(ctx, "interactive", redis.Z{Score: float64(cnts[idx]), Member: cache.key(biz, bizIDs[idx])})
 	}
 	_, err := pipeClient.Exec(ctx)
-	res, err := cache.client.Eval(ctx, luaRemCnt, []string{"interactive"}, 3).Result()
+	res, err := cache.client.Eval(ctx, luaRemCnt, []string{"interactive"}, topLimit).Result()
 	if err != nil {
 		return nil, err
 	}
