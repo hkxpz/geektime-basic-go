@@ -16,8 +16,12 @@ type Response struct {
 	Data any    `json:"data"`
 }
 
+func InternalServerErrorWith(code int) Response {
+	return Response{Code: code, Msg: "系统错误"}
+}
+
 func InternalServerError() Response {
-	return Response{Code: 5, Msg: "系统错误"}
+	return InternalServerErrorWith(5)
 }
 
 func RespSuccess(msg string) Response {

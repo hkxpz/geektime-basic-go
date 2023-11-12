@@ -11,6 +11,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"geektime-basic-go/webook/internal/domain"
+	"geektime-basic-go/webook/internal/errs"
 	"geektime-basic-go/webook/internal/service"
 	hf "geektime-basic-go/webook/pkg/ginx/handlefunc"
 	"geektime-basic-go/webook/pkg/logger"
@@ -45,7 +46,7 @@ func (ah *Handler) RegisterRoutes(s *gin.Engine) {
 func (ah *Handler) Edit(ctx *gin.Context, req Req, uc hf.UserClaims) (hf.Response, error) {
 	id, err := ah.svc.Save(ctx, req.toDomain(uc.ID))
 	if err != nil {
-		return hf.InternalServerError(), fmt.Errorf("保存数据失败: %w", err)
+		return hf.InternalServerErrorWith(errs.ArticleInternalServerError), fmt.Errorf("保存数据失败: %w", err)
 	}
 	return hf.Response{Data: id}, nil
 }
@@ -53,7 +54,7 @@ func (ah *Handler) Edit(ctx *gin.Context, req Req, uc hf.UserClaims) (hf.Respons
 func (ah *Handler) Publish(ctx *gin.Context, req Req, uc hf.UserClaims) (hf.Response, error) {
 	id, err := ah.svc.Publish(ctx, req.toDomain(uc.ID))
 	if err != nil {
-		return hf.InternalServerError(), fmt.Errorf("发表失败: %w", err)
+		return hf.InternalServerErrorWith(errs.ArticleInternalServerError), fmt.Errorf("发表失败: %w", err)
 	}
 	return hf.Response{Data: id}, nil
 }
@@ -61,7 +62,7 @@ func (ah *Handler) Publish(ctx *gin.Context, req Req, uc hf.UserClaims) (hf.Resp
 func (ah *Handler) Withdraw(ctx *gin.Context, req Req, uc hf.UserClaims) (hf.Response, error) {
 	if err := ah.svc.Withdraw(ctx, uc.ID, req.ID); err != nil {
 		ah.l.Error("设置为尽自己可见失败", logger.Error(err), logger.Field{Key: "id", Value: req.ID})
-		return hf.InternalServerError(), errors.New("设置为尽自己可见失败")
+		return hf.InternalServerErrorWith(errs.ArticleInternalServerError), errors.New("设置为尽自己可见失败")
 	}
 	return hf.Response{Msg: "OK"}, nil
 }
@@ -70,7 +71,7 @@ func (ah *Handler) PubDetail(ctx *gin.Context, uc hf.UserClaims) (hf.Response, e
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		return hf.Response{Code: 4, Msg: "参数错误"}, fmt.Errorf("查询文章详情的 ID %s 不正确, %w", idStr, err)
+		return hf.Response{Code: errs.ArticleInvalidInput, Msg: "参数错误"}, fmt.Errorf("查询文章详情的 ID %s 不正确, %w", idStr, err)
 	}
 
 	var (
@@ -88,7 +89,7 @@ func (ah *Handler) PubDetail(ctx *gin.Context, uc hf.UserClaims) (hf.Response, e
 		return
 	})
 	if err = eg.Wait(); err != nil {
-		return hf.InternalServerError(), fmt.Errorf("获取文章信息失败: %w", err)
+		return hf.InternalServerErrorWith(errs.ArticleInternalServerError), fmt.Errorf("获取文章信息失败: %w", err)
 	}
 
 	return hf.Response{Data: Vo{
@@ -112,16 +113,16 @@ func (ah *Handler) Detail(ctx *gin.Context, uc hf.UserClaims) (hf.Response, erro
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		return hf.Response{Code: 4, Msg: "参数错误"}, fmt.Errorf("查询文章详情的 ID %s 不正确, %w", idStr, err)
+		return hf.Response{Code: errs.ArticleInvalidInput, Msg: "参数错误"}, fmt.Errorf("查询文章详情的 ID %s 不正确, %w", idStr, err)
 	}
 
 	art, err := ah.svc.GetByID(ctx, id)
 	if err != nil {
-		return hf.InternalServerError(), fmt.Errorf("获得文章信息失败: %w", err)
+		return hf.InternalServerErrorWith(errs.ArticleInternalServerError), fmt.Errorf("获得文章信息失败: %w", err)
 	}
 
 	if art.Author.ID != uc.ID {
-		return hf.Response{Code: 4, Msg: "输入错误"}, fmt.Errorf("非法访问文章，创作者 ID 不匹配, uid %d", uc.ID)
+		return hf.Response{Code: errs.ArticleInvalidInput, Msg: "输入错误"}, fmt.Errorf("非法访问文章，创作者 ID 不匹配, uid %d", uc.ID)
 	}
 	return hf.Response{Data: Vo{
 		ID:       art.ID,
@@ -140,7 +141,7 @@ func (ah *Handler) List(ctx *gin.Context, req LimitReq, uc hf.UserClaims) (hf.Re
 
 	arts, err := ah.svc.List(ctx, uc.ID, req.Offset, req.Limit)
 	if err != nil {
-		return hf.InternalServerError(), fmt.Errorf("获得用户会话信息失败: %w", err)
+		return hf.InternalServerErrorWith(errs.ArticleInternalServerError), fmt.Errorf("获得用户会话信息失败: %w", err)
 	}
 
 	fn := func(idx int, src domain.Article) Vo {
@@ -158,14 +159,14 @@ func (ah *Handler) List(ctx *gin.Context, req LimitReq, uc hf.UserClaims) (hf.Re
 
 func (ah *Handler) Like(ctx *gin.Context, req LikeReq, uc hf.UserClaims) (hf.Response, error) {
 	if err := ah.intrSvc.Like(ctx, ah.biz, req.ID, uc.ID, req.Like); err != nil {
-		return hf.InternalServerError(), err
+		return hf.InternalServerErrorWith(errs.ArticleInternalServerError), err
 	}
 	return hf.RespSuccess("OK"), nil
 }
 
 func (ah *Handler) Collect(ctx *gin.Context, req CollectReq, uc hf.UserClaims) (hf.Response, error) {
 	if err := ah.intrSvc.Collect(ctx, ah.biz, req.ID, req.CID, uc.ID); err != nil {
-		return hf.InternalServerError(), err
+		return hf.InternalServerErrorWith(errs.ArticleInternalServerError), err
 	}
 	return hf.RespSuccess("OK"), nil
 }

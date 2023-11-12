@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redis/go-redis/v9"
 
 	"geektime-basic-go/webook/internal/web"
@@ -41,6 +42,13 @@ func Middlewares(cmd redis.Cmdable, jwtHandler myjwt.Handler, l logger.Logger) [
 		InstanceID: "instance-1",
 		Help:       "GIN HTTP 请求",
 	}
+	handlefunc.InitCounter(prometheus.CounterOpts{
+		Namespace:   "hkxpz",
+		Subsystem:   "webook",
+		Name:        "http_biz_code",
+		Help:        "GIN 中 HTTP 请求",
+		ConstLabels: map[string]string{"instanceID": "instance-1"},
+	})
 	return []gin.HandlerFunc{
 		//ginRatelimit.NewBuilder(ratelimit.NewRedisSlideWindowLimiter(cmd, time.Minute, 100)).Build(),
 		corsHandler(),

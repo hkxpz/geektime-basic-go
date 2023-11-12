@@ -3,6 +3,7 @@ package web
 import (
 	"github.com/gin-gonic/gin"
 
+	"geektime-basic-go/webook/internal/errs"
 	"geektime-basic-go/webook/pkg/ginx/handlefunc"
 )
 
@@ -12,4 +13,4 @@ type handler interface {
 
 type Response = handlefunc.Response
 
-var InternalServerError = handlefunc.InternalServerError
+var InternalServerError = handlefunc.InternalServerErrorWith(errs.UserInternalServerError)

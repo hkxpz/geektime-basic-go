@@ -11,6 +11,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	"geektime-basic-go/webook/internal/domain"
+	"geektime-basic-go/webook/internal/errs"
 	"geektime-basic-go/webook/internal/service"
 	myjwt "geektime-basic-go/webook/internal/web/jwt"
 	"geektime-basic-go/webook/pkg/ginx/handlefunc"
@@ -67,42 +68,42 @@ func (uh *UserHandler) SignUp(ctx *gin.Context) {
 		ConfirmPassword string `json:"confirmPassword"`
 	}{}
 	if err := ctx.Bind(&req); err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 
 	isEmail, err := uh.emailRegexExp.MatchString(req.Email)
 	if err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 	if !isEmail {
-		ctx.JSON(http.StatusOK, Response{Code: 4, Msg: "邮箱不正确"})
+		ctx.JSON(http.StatusOK, Response{Code: errs.UserInvalidInput, Msg: "邮箱不正确"})
 		return
 	}
 
 	if req.Password != req.ConfirmPassword {
-		ctx.JSON(http.StatusOK, Response{Code: 4, Msg: "两次输入的密码不相同"})
+		ctx.JSON(http.StatusOK, Response{Code: errs.UserInvalidInput, Msg: "两次输入的密码不相同"})
 		return
 	}
 
 	isPasswd, err := uh.passwordRegexExp.MatchString(req.Password)
 	if err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 	if !isPasswd {
-		ctx.JSON(http.StatusOK, Response{Code: 4, Msg: "密码必须包括数字、字母两种字符，长度在8-15位之间"})
+		ctx.JSON(http.StatusOK, Response{Code: errs.UserInvalidInput, Msg: "密码必须包括数字、字母两种字符，长度在8-15位之间"})
 		return
 	}
 
 	err = uh.svc.Signup(ctx.Request.Context(), domain.User{Email: req.Email, Password: req.ConfirmPassword})
 	if errors.Is(err, service.ErrUserDuplicate) {
-		ctx.JSON(http.StatusOK, Response{Code: 4, Msg: "重复邮箱，请换一个邮箱"})
+		ctx.JSON(http.StatusOK, Response{Code: errs.UserDuplicateEmail, Msg: "重复邮箱，请换一个邮箱"})
 		return
 	}
 	if err != nil {
-		ctx.JSON(http.StatusOK, Response{Code: 5, Msg: "服务器异常，注册失败"})
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 
@@ -115,21 +116,21 @@ func (uh *UserHandler) Login(ctx *gin.Context) {
 		Password string `json:"password"`
 	}{}
 	if err := ctx.Bind(&req); err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 	u, err := uh.svc.Login(ctx.Request.Context(), req.Email, req.Password)
 	if errors.Is(err, service.ErrInvalidUserOrPassword) {
-		ctx.JSON(http.StatusOK, Response{Code: 4, Msg: "用户名或密码不正确，请重试"})
+		ctx.JSON(http.StatusOK, Response{Code: errs.UserInvalidOrPassword, Msg: "用户名或密码不正确，请重试"})
 		return
 	}
 	if err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 
 	if err = uh.SetLoginToken(ctx, u.ID); err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 	ctx.JSON(http.StatusOK, Response{Msg: "登录成功"})
@@ -143,22 +144,22 @@ type EditReq struct {
 
 func (uh *UserHandler) Edit(ctx *gin.Context, req EditReq, uc myjwt.UserClaims) (Response, error) {
 	if req.Nickname == "" {
-		return Response{Code: 4, Msg: "昵称不能为空"}, errors.New("昵称不能为空")
+		return Response{Code: errs.UserInvalidInput, Msg: "昵称不能为空"}, errors.New("昵称不能为空")
 	}
 	if utf8.RuneCountInString(req.Nickname) > 30 {
-		return Response{Code: 4, Msg: "昵称过长"}, errors.New("昵称过长")
+		return Response{Code: errs.UserInvalidInput, Msg: "昵称过长"}, errors.New("昵称过长")
 	}
 	if utf8.RuneCountInString(req.AboutMe) > 50 {
-		return Response{Code: 4, Msg: "关于我过长"}, errors.New("关于我过长")
+		return Response{Code: errs.UserInvalidInput, Msg: "关于我过长"}, errors.New("关于我过长")
 	}
 	birthday, err := time.Parse(time.DateOnly, req.Birthday)
 	if err != nil {
-		return Response{Code: 4, Msg: "日期格式不对"}, errors.New("日期格式不对")
+		return Response{Code: errs.UserInvalidInput, Msg: "日期格式不对"}, errors.New("日期格式不对")
 	}
 
 	err = uh.svc.Edit(ctx, domain.User{ID: uc.ID, Nickname: req.Nickname, Birthday: birthday, AboutMe: req.AboutMe})
 	if err != nil {
-		return InternalServerError(), err
+		return InternalServerError, err
 	}
 
 	return Response{Msg: "OK"}, nil
@@ -175,7 +176,7 @@ func (uh *UserHandler) Profile(ctx *gin.Context) {
 	uc := ctx.MustGet("user").(myjwt.UserClaims)
 	user, err := uh.svc.Profile(ctx, uc.ID)
 	if err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 	ctx.JSON(http.StatusOK, Response{Msg: "OK", Data: Profile{
@@ -192,23 +193,23 @@ func (uh *UserHandler) SendSMSLoginCode(ctx *gin.Context) {
 		Phone string `json:"phone"`
 	}{}
 	if err := ctx.Bind(&req); err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 
 	isPhone, err := uh.phoneRegexExp.MatchString(req.Phone)
 	if err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 	if !isPhone {
-		ctx.JSON(http.StatusOK, Response{Code: 4, Msg: "手机号码错误"})
+		ctx.JSON(http.StatusOK, Response{Code: errs.UserInvalidInput, Msg: "手机号码错误"})
 		return
 	}
 
 	switch err = uh.codeSvc.Send(ctx, bizLogin, req.Phone); {
 	default:
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 	case err == nil:
 		ctx.JSON(http.StatusOK, Response{Msg: "发送成功"})
 	case errors.Is(err, service.ErrCodeSendTooMany):
@@ -227,27 +228,27 @@ func (uh *UserHandler) LoginSMS(ctx *gin.Context) {
 		Code  string `json:"code"`
 	}{}
 	if err := ctx.Bind(&req); err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 	ok, err := uh.codeSvc.Verify(ctx, bizLogin, req.Phone, req.Code)
 	if err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 	if !ok {
-		ctx.JSON(http.StatusOK, Response{Code: 4, Msg: "验证码错误"})
+		ctx.JSON(http.StatusOK, Response{Code: errs.UserInvalidInput, Msg: "验证码错误"})
 		return
 	}
 
 	u, err := uh.svc.FindOrCreate(ctx, req.Phone)
 	if err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 
 	if err = uh.SetLoginToken(ctx, u.ID); err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 	ctx.JSON(http.StatusOK, Response{Msg: "登录成功"})
@@ -276,7 +277,7 @@ func (uh *UserHandler) RefreshToken(ctx *gin.Context) {
 	}
 
 	if err = uh.SetJWTToken(ctx, rc.SSID, rc.ID); err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 	ctx.JSON(http.StatusOK, Response{Msg: "刷新成功"})
@@ -284,7 +285,7 @@ func (uh *UserHandler) RefreshToken(ctx *gin.Context) {
 
 func (uh *UserHandler) Logout(ctx *gin.Context) {
 	if err := uh.ClearToken(ctx); err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 

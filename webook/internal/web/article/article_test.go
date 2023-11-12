@@ -8,21 +8,18 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"go.uber.org/zap"
-
-	"geektime-basic-go/webook/pkg/logger"
-
-	"geektime-basic-go/webook/internal/domain"
-
-	"geektime-basic-go/webook/internal/service/mocks"
-
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+	"go.uber.org/zap"
 
+	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/service"
+	"geektime-basic-go/webook/internal/service/mocks"
 	myjwt "geektime-basic-go/webook/internal/web/jwt"
+	hf "geektime-basic-go/webook/pkg/ginx/handlefunc"
+	"geektime-basic-go/webook/pkg/logger"
 )
 
 func TestArticleHandler_Edit(t *testing.T) {
@@ -32,7 +29,7 @@ func TestArticleHandler_Edit(t *testing.T) {
 		reqBody []byte
 
 		wantCode int
-		wantRes  Response
+		wantRes  hf.Response
 	}{
 		{
 			name: "新建帖子",
@@ -47,7 +44,7 @@ func TestArticleHandler_Edit(t *testing.T) {
 			},
 			reqBody:  []byte(`{"title":"我的标题","content":"我的内容"}`),
 			wantCode: http.StatusOK,
-			wantRes:  Response{Data: float64(1)},
+			wantRes:  hf.Response{Data: float64(1)},
 		},
 		{
 			name: "更新文章",
@@ -63,7 +60,7 @@ func TestArticleHandler_Edit(t *testing.T) {
 			},
 			reqBody:  []byte(`{"id":1,"title":"我的标题","content":"我的内容"}`),
 			wantCode: http.StatusOK,
-			wantRes:  Response{Data: float64(1)},
+			wantRes:  hf.Response{Data: float64(1)},
 		},
 		{
 			name: "更新别人文章",
@@ -79,7 +76,7 @@ func TestArticleHandler_Edit(t *testing.T) {
 			},
 			reqBody:  []byte(`{"id":1,"title":"我的标题","content":"我的内容"}`),
 			wantCode: http.StatusOK,
-			wantRes:  Response{Code: 5, Msg: "系统错误"},
+			wantRes:  hf.Response{Code: 5, Msg: "系统错误"},
 		},
 		{
 			name: "Bind错误",
@@ -111,7 +108,7 @@ func TestArticleHandler_Edit(t *testing.T) {
 			if recorder.Code != http.StatusOK {
 				return
 			}
-			var webRes Response
+			var webRes hf.Response
 			err := json.NewDecoder(recorder.Body).Decode(&webRes)
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantCode, recorder.Code)
@@ -128,7 +125,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 		reqBody []byte
 
 		wantCode int
-		wantRes  Response
+		wantRes  hf.Response
 	}{
 		{
 			name: "新建立刻发表成功",
@@ -143,7 +140,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 			},
 			reqBody:  []byte(`{"title":"我的标题","content":"我的内容"}`),
 			wantCode: http.StatusOK,
-			wantRes:  Response{Data: float64(1)},
+			wantRes:  hf.Response{Data: float64(1)},
 		},
 		{
 			name: "已有帖子发表成功",
@@ -159,7 +156,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 			},
 			reqBody:  []byte(`{"ID":1,"title":"我的标题","content":"我的内容"}`),
 			wantCode: http.StatusOK,
-			wantRes:  Response{Data: float64(1)},
+			wantRes:  hf.Response{Data: float64(1)},
 		},
 		{
 			name: "发表失败",
@@ -174,7 +171,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 			},
 			reqBody:  []byte(`{"title":"我的标题","content":"我的内容"}`),
 			wantCode: http.StatusOK,
-			wantRes:  Response{Code: 5, Msg: "系统错误"},
+			wantRes:  hf.Response{Code: 5, Msg: "系统错误"},
 		},
 		{
 			name: "Bind错误",
@@ -206,7 +203,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 			if recorder.Code != http.StatusOK {
 				return
 			}
-			var webRes Response
+			var webRes hf.Response
 			err := json.NewDecoder(recorder.Body).Decode(&webRes)
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantCode, recorder.Code)
