@@ -44,11 +44,11 @@ func (oh *OAuth2WechatHandler) OAuth2URL(ctx *gin.Context) {
 	state := uuid.New()
 	url, err := oh.svc.AuthURL(ctx, state)
 	if err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 	if err = oh.setStateCookie(ctx, state); err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 	ctx.JSON(http.StatusOK, Response{Data: url})
@@ -56,23 +56,23 @@ func (oh *OAuth2WechatHandler) OAuth2URL(ctx *gin.Context) {
 
 func (oh *OAuth2WechatHandler) Callback(ctx *gin.Context) {
 	if err := oh.verifyState(ctx); err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 
 	code := ctx.Query("code")
 	info, err := oh.svc.VerifyCode(ctx, code)
 	if err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 	u, err := oh.userSvc.FindOrCreateByWechat(ctx, info)
 	if err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 	if err = oh.SetLoginToken(ctx, u.ID); err != nil {
-		ctx.JSON(http.StatusOK, InternalServerError())
+		ctx.JSON(http.StatusOK, InternalServerError)
 		return
 	}
 	ctx.JSON(http.StatusOK, Response{Msg: "登陆成功"})

@@ -2,6 +2,7 @@ package ioc
 
 import (
 	"fmt"
+
 	"geektime-basic-go/webook/internal/events"
 	"geektime-basic-go/webook/internal/events/article"
 
@@ -36,6 +37,6 @@ func NewSyncProducer(client sarama.Client) sarama.SyncProducer {
 }
 
 // NewConsumers 面临的问题依旧是所有的 Consumer 在这里注册一下
-func NewConsumers(c1 *article.InteractiveReadEventConsumer) []events.Consumer {
-	return []events.Consumer{c1}
+func NewConsumers(c1 *article.InteractiveReadEventConsumer, c2 *article.ChangeLikeEventConsumer) []events.Consumer {
+	return []events.Consumer{c1, c2}
 }

@@ -64,6 +64,8 @@ var HandlerProvider = wire.NewSet(
 var eventsProvider = wire.NewSet(
 	events.NewSaramaSyncProducer,
 	events.NewInteractiveReadEventConsumer,
+	events.NewChangeLikeSaramaSyncProducer,
+	events.NewInteractiveLikeEventConsumer,
 	ioc.NewConsumers,
 )
 

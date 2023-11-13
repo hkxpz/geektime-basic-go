@@ -1,18 +1,27 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
+
+	"geektime-basic-go/webook/ioc"
 )
 
 func main() {
+	gin.SetMode(gin.ReleaseMode)
 	initViper()
+	initLogger()
+	closeFunc := ioc.InitOTEL()
 	initPrometheus()
 	app := InitApp()
 
@@ -26,7 +35,11 @@ func main() {
 	server.GET("/PING", func(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "PONG")
 	})
-	log.Fatalln(server.Run(":8080"))
+
+	log.Println(server.Run(":8080"))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	closeFunc(ctx)
 }
 
 func initPrometheus() {
@@ -63,4 +76,12 @@ func InitViperRemote() {
 	if err := viper.ReadRemoteConfig(); err != nil {
 		panic(err)
 	}
+}
+
+func initLogger() {
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		panic(fmt.Sprintf("初始化 logger 失败: %s", err))
+	}
+	zap.ReplaceGlobals(logger)
 }
