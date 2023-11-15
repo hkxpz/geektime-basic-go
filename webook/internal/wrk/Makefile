@@ -12,4 +12,4 @@ profile:
 
 .PHNOY:article.like
 article.like:
-	@wrk -t1 -d1s -c10 -s ./article/like.lua http://localhost:8080/articles/pub/like
+	@wrk -t1 -d10 -c1 -s ./article/like.lua http://localhost:8080/articles/pub/like

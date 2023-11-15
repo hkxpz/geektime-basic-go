@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
+	"net/http"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
@@ -43,9 +46,17 @@ func TestArticleHandler_Like(t *testing.T) {
 	ah := startup.InitArticleHandlerWithKafka()
 	ah.RegisterRoutes(server)
 	go func() {
-		if err := startup.InitInteractiveLikeEventConsumer().Start(); err != nil {
+		if err := startup.InitInteractiveLikeEventConsumer().StartBatch(); err != nil {
 			require.NoError(t, err)
 		}
 	}()
+	initPrometheus()
 	t.Error(server.Run(":8080"))
+}
+
+func initPrometheus() {
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		log.Fatalln(http.ListenAndServe(":8081", nil))
+	}()
 }

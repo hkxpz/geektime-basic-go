@@ -5,18 +5,52 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/IBM/sarama"
 
 	"geektime-basic-go/webook/pkg/logger"
 )
 
 type BatchHandler[T any] struct {
-	l  logger.Logger
-	fn func(msg []*sarama.ConsumerMessage, t []T) error
+	l                   logger.Logger
+	fn                  func(msg []*sarama.ConsumerMessage, t []T) error
+	consumerOffsetGauge prometheus.Gauge
+	errorGauge          prometheus.Gauge
 }
 
-func NewBatchHandler[T any](l logger.Logger, fn func(msg []*sarama.ConsumerMessage, t []T) error) *BatchHandler[T] {
-	return &BatchHandler[T]{l: l, fn: fn}
+type options[T any] func(hdl *BatchHandler[T])
+
+func (b *BatchHandler[T]) SetConsumerOffsetGauge() *BatchHandler[T] {
+	gauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace:   "hkxpz",
+		Subsystem:   "webook",
+		Name:        "kafka_consumer_offset",
+		ConstLabels: map[string]string{"instance_id": "instance-1"},
+	})
+	prometheus.MustRegister(gauge)
+	b.consumerOffsetGauge = gauge
+	return b
+}
+
+func (b *BatchHandler[T]) SetErrorGauge() *BatchHandler[T] {
+	gauge := prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace:   "hkxpz",
+		Subsystem:   "webook",
+		Name:        "kafka_consumer_error",
+		ConstLabels: map[string]string{"instance_id": "instance-1"},
+	})
+	prometheus.MustRegister(gauge)
+	b.errorGauge = gauge
+	return b
+}
+
+func NewBatchHandler[T any](l logger.Logger, fn func(msg []*sarama.ConsumerMessage, t []T) error, opts ...options[T]) *BatchHandler[T] {
+	hdl := &BatchHandler[T]{l: l, fn: fn}
+	for _, opt := range opts {
+		opt(hdl)
+	}
+	return hdl
 }
 
 func (b *BatchHandler[T]) Setup(session sarama.ConsumerGroupSession) error {
@@ -28,9 +62,12 @@ func (b *BatchHandler[T]) Cleanup(session sarama.ConsumerGroupSession) error {
 }
 
 func (b *BatchHandler[T]) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	latestConsumerOffset := claim.InitialOffset()
 	msgCh := claim.Messages()
+	var lastMsg *sarama.ConsumerMessage
 	const batchSize = 20
 	for {
+		b.consumerOffsetGauge.Set(float64(claim.HighWaterMarkOffset() - latestConsumerOffset))
 		msgs := make([]*sarama.ConsumerMessage, 0, batchSize)
 		ts := make([]T, 0, batchSize)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -60,6 +97,7 @@ func (b *BatchHandler[T]) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 				}
 				msgs = append(msgs, msg)
 				ts = append(ts, t)
+				lastMsg = msg
 			}
 		}
 
@@ -68,14 +106,13 @@ func (b *BatchHandler[T]) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 			continue
 		}
 		if err := b.fn(msgs, ts); err != nil {
+			b.errorGauge.Set(-1)
 			// 这里可以考虑重试，也可以在具体的业务逻辑里面重试
 			// 也就是 eg.Go 里面重试
 			continue
 		}
-
-		// 这边就要都提交了
-		for _, msg := range msgs {
-			session.MarkMessage(msg, "")
-		}
+		b.errorGauge.Set(1)
+		latestConsumerOffset = lastMsg.Offset
+		session.MarkMessage(lastMsg, "")
 	}
 }

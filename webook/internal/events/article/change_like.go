@@ -70,7 +70,21 @@ func (c *ChangeLikeEventConsumer) Start() error {
 		c.l.Error("获取消费者组失败", logger.Error(err))
 	}
 	go func() {
-		err = cg.Consume(context.Background(), []string{topicChangeLike}, saramax.NewBatchHandler[ChangeLikeEvent](c.l, c.BatchConsume))
+		err = cg.Consume(context.Background(), []string{topicChangeLike}, saramax.NewHandler[ChangeLikeEvent](c.l, c.Consume))
+		if err != nil {
+			c.l.Error("退出消费者循环异常", logger.Error(err))
+		}
+	}()
+	return err
+}
+
+func (c *ChangeLikeEventConsumer) StartBatch() error {
+	cg, err := sarama.NewConsumerGroupFromClient("change_like", c.client)
+	if err != nil {
+		c.l.Error("获取消费者组失败", logger.Error(err))
+	}
+	go func() {
+		err = cg.Consume(context.Background(), []string{topicChangeLike}, saramax.NewBatchHandler[ChangeLikeEvent](c.l, c.BatchConsume).SetConsumerOffsetGauge())
 		if err != nil {
 			c.l.Error("退出消费者循环异常", logger.Error(err))
 		}
