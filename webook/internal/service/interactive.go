@@ -64,7 +64,7 @@ func (svc *interactiveService) CancelLike(ctx context.Context, biz string, bizID
 }
 
 func (svc *interactiveService) Like(ctx context.Context, biz string, bizID int64, uid int64, like bool) error {
-	return svc.producer.ProduceChangeLikeEvent(events.ChangeLikeEvent{BizID: bizID, Uid: uid, Liked: like})
+	return svc.producer.ProduceChangeLikeEvent(ctx, events.ChangeLikeEvent{BizID: bizID, Uid: uid, Liked: like})
 }
 
 func (svc *interactiveService) Collect(ctx context.Context, biz string, bizID int64, cid int64, uid int64) error {

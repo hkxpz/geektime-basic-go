@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/plugin/opentelemetry/tracing"
 
 	"geektime-basic-go/webook/internal/repository/dao"
 )
@@ -17,6 +18,10 @@ func InitDB() *gorm.DB {
 	}
 	db, err := gorm.Open(mysql.Open(cfg.DSN))
 	if err != nil {
+		panic(err)
+	}
+
+	if err = db.Use(tracing.NewPlugin(tracing.WithoutMetrics())); err != nil {
 		panic(err)
 	}
 

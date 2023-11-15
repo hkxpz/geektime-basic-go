@@ -16,7 +16,7 @@ import (
 )
 
 func InitOTEL() func(ctx context.Context) {
-	res, err := newResource("demo", "v0.0.1")
+	res, err := newResource("webook", "v0.0.1")
 	if err != nil {
 		panic(fmt.Sprintf("opentelemetry 初始化 resource 失败: %s", err))
 	}

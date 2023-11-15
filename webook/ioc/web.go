@@ -17,9 +17,7 @@ import (
 	"geektime-basic-go/webook/pkg/ginx/accesslog"
 	"geektime-basic-go/webook/pkg/ginx/handlefunc"
 	"geektime-basic-go/webook/pkg/ginx/metrics"
-	ginRatelimit "geektime-basic-go/webook/pkg/ginx/ratelimit"
 	"geektime-basic-go/webook/pkg/logger"
-	"geektime-basic-go/webook/pkg/ratelimit"
 )
 
 func InitWebServer(fn []gin.HandlerFunc,
@@ -53,7 +51,7 @@ func Middlewares(cmd redis.Cmdable, jwtHandler myjwt.Handler, l logger.Logger) [
 		ConstLabels: map[string]string{"instanceID": "instance-1"},
 	})
 	return []gin.HandlerFunc{
-		ginRatelimit.NewBuilder(ratelimit.NewRedisSlideWindowLimiter(cmd, time.Minute, 100)).Build(),
+		//ginRatelimit.NewBuilder(ratelimit.NewRedisSlideWindowLimiter(cmd, time.Minute, 100)).Build(),
 		corsHandler(),
 		pb.BuildResponseTime(),
 		pb.BuildActiveRequest(),

@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
 
 	"geektime-basic-go/webook/internal/events"
@@ -23,7 +25,7 @@ type ChangeLikeEvent struct {
 }
 
 type ChangeLikeProducer interface {
-	ProduceChangeLikeEvent(evt ChangeLikeEvent) error
+	ProduceChangeLikeEvent(ctx context.Context, evt ChangeLikeEvent) error
 }
 
 type changeLikeSaramaSyncProducer struct {
@@ -34,7 +36,10 @@ func NewChangeLikeSaramaSyncProducer(producer sarama.SyncProducer) ChangeLikePro
 	return &changeLikeSaramaSyncProducer{producer: producer}
 }
 
-func (p *changeLikeSaramaSyncProducer) ProduceChangeLikeEvent(evt ChangeLikeEvent) error {
+func (p *changeLikeSaramaSyncProducer) ProduceChangeLikeEvent(ctx context.Context, evt ChangeLikeEvent) error {
+	tracer := otel.GetTracerProvider().Tracer("webook/internal/events/article/change_like")
+	_, span := tracer.Start(ctx, "produceChangeLikeEvent", trace.WithSpanKind(trace.SpanKindProducer))
+	defer span.End()
 	val, err := json.Marshal(evt)
 	if err != nil {
 		return err

@@ -1,6 +1,6 @@
 .PHNOY:signup
 signup:
-	@wrk -t1 -d1s -c2 -s ./signup.lua http://localhost:8080/users/signup
+	@wrk -t1 -d1s -c1 -s ./signup.lua http://localhost:8080/users/signup
 
 .PHNOY:login
 login:
@@ -12,4 +12,4 @@ profile:
 
 .PHNOY:article.like
 article.like:
-	@wrk -t1 -d10s -c10 -s ./article/like.lua http://localhost:8080/articles/pub/like
+	@wrk -t1 -d1s -c10 -s ./article/like.lua http://localhost:8080/articles/pub/like
