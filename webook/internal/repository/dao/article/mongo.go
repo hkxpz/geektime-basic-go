@@ -122,3 +122,8 @@ func (dao *mongoDBDAO) GetByAuthor(ctx context.Context, author int64, offset, li
 	//TODO implement me
 	panic("implement me")
 }
+
+func (dao *mongoDBDAO) ListPubByCreateAt(ctx context.Context, updateAt time.Time, offset int, limit int) ([]PublishedArticle, error) {
+	//TODO implement me
+	panic("implement me")
+}

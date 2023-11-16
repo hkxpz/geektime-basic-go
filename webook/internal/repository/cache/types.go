@@ -43,3 +43,8 @@ type InteractiveCache interface {
 	BatchDecrLikeCntIfPresent(ctx context.Context, biz string, bizIDs []int64) error
 	BatchSetLikeCnt(ctx context.Context, biz string, bizIDs []int64, cnts []int64) ([]string, error)
 }
+
+type RankingCache interface {
+	Set(ctx context.Context, arts []domain.Article) error
+	Get(ctx context.Context) ([]domain.Article, error)
+}

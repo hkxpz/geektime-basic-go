@@ -17,6 +17,7 @@ type InteractiveService interface {
 	Get(ctx context.Context, biz string, bizID int64, uid int64) (domain.Interactive, error)
 	Like(ctx context.Context, biz string, bizID int64, uid int64, like bool) error
 	Collect(ctx context.Context, biz string, bizID int64, cid int64, uid int64) error
+	GetByIDs(ctx context.Context, biz string, bizIDs []int64) (map[int64]domain.Interactive, error)
 }
 
 type interactiveService struct {
@@ -69,4 +70,16 @@ func (svc *interactiveService) Like(ctx context.Context, biz string, bizID int64
 
 func (svc *interactiveService) Collect(ctx context.Context, biz string, bizID int64, cid int64, uid int64) error {
 	return svc.repo.AddCollectionItem(ctx, biz, bizID, cid, uid)
+}
+
+func (svc *interactiveService) GetByIDs(ctx context.Context, biz string, bizIDs []int64) (map[int64]domain.Interactive, error) {
+	intrs, err := svc.repo.GetByIDs(ctx, biz, bizIDs)
+	if err != nil {
+		return nil, err
+	}
+	res := make(map[int64]domain.Interactive, len(intrs))
+	for _, intr := range intrs {
+		res[intr.BizID] = intr
+	}
+	return res, nil
 }

@@ -7,6 +7,7 @@ import (
 
 	events "geektime-basic-go/webook/internal/events/article"
 	"geektime-basic-go/webook/internal/repository"
+	"geektime-basic-go/webook/internal/repository/cache/memory"
 	cache "geektime-basic-go/webook/internal/repository/cache/redis"
 	"geektime-basic-go/webook/internal/repository/dao"
 	"geektime-basic-go/webook/internal/repository/dao/article"
@@ -24,6 +25,7 @@ var thirdProvider = wire.NewSet(
 	ioc.InitZapLogger,
 	ioc.InitKafka,
 	ioc.NewSyncProducer,
+	ioc.InitRLockClient,
 )
 
 var userSvcProvider = wire.NewSet(
@@ -54,6 +56,13 @@ var interactiveSvcProvider = wire.NewSet(
 	cache.NewInteractiveCache,
 )
 
+var rankServiceProvider = wire.NewSet(
+	service.NewBatchRankingService,
+	repository.NewCacheRankingRepository,
+	cache.NewRankingCache,
+	memory.NewRankingCache,
+)
+
 var HandlerProvider = wire.NewSet(
 	myjwt.NewJWTHandler,
 	web.NewUserHandler,
@@ -69,6 +78,11 @@ var eventsProvider = wire.NewSet(
 	ioc.NewConsumers,
 )
 
+var jobProvider = wire.NewSet(
+	ioc.InitJobs,
+	ioc.InitRankingJob,
+)
+
 func InitApp() *App {
 	wire.Build(
 		thirdProvider,
@@ -76,11 +90,15 @@ func InitApp() *App {
 		// events 部分
 		eventsProvider,
 
+		// job 部分
+		jobProvider,
+
 		// service
 		userSvcProvider,
 		codeSvcProvider,
 		articleSvcProvider,
 		interactiveSvcProvider,
+		rankServiceProvider,
 		ioc.InitLocalWechatService,
 
 		// handler 部分

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/ecodeclub/ekit/slice"
+
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/repository/cache"
 	"geektime-basic-go/webook/internal/repository/dao"
@@ -23,6 +25,7 @@ type InteractiveRepository interface {
 	BatchIncrReadCnt(ctx context.Context, bizs []string, bizIDs []int64) error
 	BatchIncrLike(ctx context.Context, biz string, bizIDs []int64, uids []int64) error
 	BatchDecrLike(ctx context.Context, biz string, bizIDs []int64, uids []int64) error
+	GetByIDs(ctx context.Context, biz string, bizIDs []int64) ([]domain.Interactive, error)
 }
 
 type cacheInteractiveRepository struct {
@@ -181,4 +184,14 @@ func (repo *cacheInteractiveRepository) checkExists(biz string, bizIDs []int64) 
 
 func (repo *cacheInteractiveRepository) key(biz string, bizID int64) string {
 	return fmt.Sprintf("interactive:%s:%d", biz, bizID)
+}
+
+func (repo *cacheInteractiveRepository) GetByIDs(ctx context.Context, biz string, bizIDs []int64) ([]domain.Interactive, error) {
+	vals, err := repo.dao.GetByIDs(ctx, biz, bizIDs)
+	if err != nil {
+		return nil, err
+	}
+	return slice.Map(vals, func(idx int, src dao.Interactive) domain.Interactive {
+		return repo.toDomain(src)
+	}), nil
 }

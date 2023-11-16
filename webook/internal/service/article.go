@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -19,6 +20,7 @@ type ArticleService interface {
 	GetPublishedByID(ctx *gin.Context, id, uid int64) (domain.Article, error)
 	GetByID(ctx *gin.Context, id int64) (domain.Article, error)
 	List(ctx *gin.Context, id int64, offset int, limit int) ([]domain.Article, error)
+	ListPub(ctx context.Context, updateAt time.Time, offset, limit int) ([]domain.Article, error)
 }
 
 type articleService struct {
@@ -68,4 +70,8 @@ func (svc *articleService) GetByID(ctx *gin.Context, id int64) (domain.Article, 
 
 func (svc *articleService) List(ctx *gin.Context, author int64, offset int, limit int) ([]domain.Article, error) {
 	return svc.repo.List(ctx, author, offset, limit)
+}
+
+func (svc *articleService) ListPub(ctx context.Context, updateAt time.Time, offset, limit int) ([]domain.Article, error) {
+	return svc.repo.ListPub(ctx, updateAt, offset, limit)
 }

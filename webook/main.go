@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/gin-gonic/gin"
@@ -20,26 +19,28 @@ import (
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	initViper()
-	initLogger()
-	closeFunc := ioc.InitOTEL()
 	initPrometheus()
-	app := InitApp()
+	cancel := ioc.InitOTEL()
+	defer cancel(context.Background())
 
+	app := InitApp()
 	for _, consumer := range app.consumers {
 		if err := consumer.Start(); err != nil {
 			panic(err)
 		}
 	}
 
+	app.cron.Start()
+	defer func() {
+		<-app.cron.Stop().Done()
+	}()
+
 	server := app.web
 	server.GET("/PING", func(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "PONG")
 	})
 
-	log.Println(server.Run(":8080"))
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-	closeFunc(ctx)
+	log.Fatalln(server.Run(":8080"))
 }
 
 func initPrometheus() {

@@ -20,6 +20,7 @@ type InteractiveDAO interface {
 	DeleteLikeInfo(ctx context.Context, biz string, bizID int64, uid int64) error
 	BatchDeleteLikeInfo(ctx context.Context, biz string, bizIDs []int64, uids []int64) error
 	GetMultipleLikeCnt(ctx context.Context, biz string, bizIDs []int64) ([]Interactive, error)
+	GetByIDs(ctx context.Context, biz string, bizIDs []int64) ([]Interactive, error)
 }
 
 type gormDAO struct {
@@ -241,5 +242,11 @@ func (dao *gormDAO) GetMultipleLikeCnt(ctx context.Context, biz string, bizIDs [
 		Where("biz = ? AND biz_id IN ? AND status = 1", biz, bizIDs).
 		Group("biz_id").
 		Find(&res).Error
+	return res, err
+}
+
+func (dao *gormDAO) GetByIDs(ctx context.Context, biz string, bizIDs []int64) ([]Interactive, error) {
+	var res []Interactive
+	err := dao.db.WithContext(ctx).Where("biz = ? AND id IN ?", biz, bizIDs).Find(&res).Error
 	return res, err
 }

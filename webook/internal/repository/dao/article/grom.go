@@ -6,8 +6,6 @@ import (
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-
-	"geektime-basic-go/webook/internal/domain"
 )
 
 type gormDAO struct {
@@ -119,7 +117,8 @@ func (dao *gormDAO) GetByID(ctx context.Context, id int64) (Article, error) {
 	return art, err
 }
 
-func (dao *gormDAO) List(ctx context.Context, author int64, offset int, limit int) ([]domain.Article, error) {
-	//TODO implement me
-	panic("implement me")
+func (dao *gormDAO) ListPubByCreateAt(ctx context.Context, updateAt time.Time, offset int, limit int) ([]PublishedArticle, error) {
+	var res []PublishedArticle
+	err := dao.db.WithContext(ctx).Where("update_at < ?", updateAt.UnixMilli()).Order("create_at DESC").Limit(limit).Offset(offset).Error
+	return res, err
 }
