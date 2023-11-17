@@ -109,7 +109,7 @@ func TestArticleService_Save(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			svc := NewArticleService(tc.mock(ctrl), nil)
+			svc := NewArticleService(tc.mock(ctrl), nil, nil)
 			id, err := svc.Save(context.Background(), tc.art)
 			require.Equal(t, tc.wantErr, err)
 			require.Equal(t, tc.wantID, id)
@@ -173,7 +173,7 @@ func TestArticleService_Publish(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			svc := NewArticleService(tc.mock(ctrl), nil)
+			svc := NewArticleService(tc.mock(ctrl), nil, nil)
 			id, err := svc.Publish(context.Background(), tc.art)
 			require.Equal(t, tc.wantErr, err)
 			require.Equal(t, tc.wantID, id)

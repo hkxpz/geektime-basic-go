@@ -12,6 +12,7 @@ import (
 	"geektime-basic-go/webook/internal/repository"
 )
 
+//go:generate mockgen -source=ranking.go -package=mocks -destination=mocks/ranking_mock_gen.go RankingService
 type RankingService interface {
 	RankTopN(ctx context.Context) error
 	TopN(ctx context.Context) ([]domain.Article, error)
@@ -63,11 +64,16 @@ func (svc *batchRankingService) rankTopN(ctx context.Context) ([]domain.Article,
 		return 0
 	})
 
+	minScore := float64(0)
 	for {
 		arts, err := svc.artSvc.ListPub(ctx, now, offset, svc.BatchSize)
 		if err != nil {
 			return nil, err
 		}
+		if len(arts) < 1 {
+			break
+		}
+
 		artIDs := slice.Map(arts, func(idx int, src domain.Article) int64 {
 			return src.ID
 		})
@@ -76,7 +82,6 @@ func (svc *batchRankingService) rankTopN(ctx context.Context) ([]domain.Article,
 			return nil, err
 		}
 
-		minScore := float64(0)
 		for _, art := range arts {
 			intr, ok := intrMap[art.ID]
 			if !ok {
@@ -85,7 +90,7 @@ func (svc *batchRankingService) rankTopN(ctx context.Context) ([]domain.Article,
 
 			score := svc.soreFunc(intr.LikeCnt, art.UpdateAt)
 			// 当前分数小于最小分数, 不做处理
-			if score < minScore {
+			if score < minScore && que.Len() > 0 {
 				continue
 			}
 
@@ -101,15 +106,11 @@ func (svc *batchRankingService) rankTopN(ctx context.Context) ([]domain.Article,
 				continue
 			}
 
-			// 队列最小值大于或等于当前值, 不做处理
-			if queMinScore.score >= score {
-				minScore = score
-				continue
-			}
 			// 出队, 当前值入队
-			minScore = queMinScore.score
 			_, _ = que.Dequeue()
 			_ = que.Enqueue(ele)
+			val, _ := que.Peek()
+			minScore = val.score
 		}
 
 		length := len(arts)

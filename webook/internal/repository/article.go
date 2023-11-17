@@ -12,7 +12,7 @@ import (
 	"geektime-basic-go/webook/pkg/logger"
 )
 
-//go:generate mockgen -source=article.go -package=mocks -destination=mocks/acticle_mock_gen.go ArticleRepository
+//go:generate mockgen -source=article.go -package=mocks -destination=mocks/article_mock_gen.go ArticleRepository
 type ArticleRepository interface {
 	Create(ctx context.Context, art domain.Article) (int64, error)
 	Update(ctx context.Context, art domain.Article) error
