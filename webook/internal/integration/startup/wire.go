@@ -15,17 +15,15 @@ import (
 	"geektime-basic-go/webook/internal/web"
 	webarticle "geektime-basic-go/webook/internal/web/article"
 	myjwt "geektime-basic-go/webook/internal/web/jwt"
-	"geektime-basic-go/webook/ioc"
-	"geektime-basic-go/webook/ioc/sms"
 )
 
 var thirdProvider = wire.NewSet(
 	InitDB,
-	//InitLog,
-	ioc.InitZapLogger,
-	ioc.InitRedis,
-	ioc.InitKafka,
-	ioc.NewSyncProducer,
+	InitLog,
+	InitZapLogger,
+	InitRedis,
+	InitKafka,
+	NewSyncProducer,
 )
 
 var userSvcProvider = wire.NewSet(
@@ -43,7 +41,7 @@ var articleSvcProvider = wire.NewSet(
 )
 
 var codeSvcProvider = wire.NewSet(
-	sms.InitSmsSvc,
+	InitSmsSvc,
 	service.NewSMSCodeService,
 	repository.NewCodeRepository,
 	redisCache.NewCodeCache,
@@ -61,7 +59,7 @@ var eventsProvider = wire.NewSet(
 	events.NewInteractiveReadEventConsumer,
 	events.NewInteractiveLikeEventConsumer,
 	events.NewChangeLikeSaramaSyncProducer,
-	ioc.NewConsumers,
+	NewConsumers,
 )
 
 var HandlerProvider = wire.NewSet(
@@ -83,16 +81,16 @@ func InitWebServer() *gin.Engine {
 		codeSvcProvider,
 		articleSvcProvider,
 		interactiveSvcProvider,
-		ioc.InitLocalWechatService,
+		InitLocalWechatService,
 
 		// handler 部分
 		HandlerProvider,
 
 		// gin 的中间件
-		ioc.Middlewares,
+		Middlewares,
 
 		// Web 服务器
-		ioc.InitWebServer,
+		InitWeb,
 	)
 
 	return gin.Default()
