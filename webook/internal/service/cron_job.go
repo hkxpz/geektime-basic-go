@@ -54,9 +54,6 @@ func (svc *cronJobService) Preempt(ctx context.Context) (domain.CronJob, error) 
 	}()
 
 	// 只能调用一次，也就是放弃续约。这时候要把状态还原回去
-	if j.CancelFunc != nil {
-		return j, nil
-	}
 	j.CancelFunc = func() {
 		ticker.Stop()
 		releaseCtx, cancel := context.WithTimeout(context.Background(), time.Second)
