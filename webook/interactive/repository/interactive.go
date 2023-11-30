@@ -8,9 +8,9 @@ import (
 
 	"github.com/ecodeclub/ekit/slice"
 
-	"geektime-basic-go/webook/internal/domain"
-	"geektime-basic-go/webook/internal/repository/cache"
-	"geektime-basic-go/webook/internal/repository/dao"
+	"geektime-basic-go/webook/interactive/domain"
+	"geektime-basic-go/webook/interactive/repository/cache"
+	"geektime-basic-go/webook/interactive/repository/dao"
 	"geektime-basic-go/webook/pkg/logger"
 )
 

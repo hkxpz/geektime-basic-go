@@ -1,4 +1,4 @@
-package redis
+package cache
 
 import (
 	"context"
@@ -10,9 +10,20 @@ import (
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/redis/go-redis/v9"
 
-	"geektime-basic-go/webook/internal/domain"
-	"geektime-basic-go/webook/internal/repository/cache"
+	"geektime-basic-go/webook/interactive/domain"
 )
+
+type InteractiveCache interface {
+	Get(ctx context.Context, biz string, bizID int64) (domain.Interactive, error)
+	Set(ctx context.Context, biz string, bizID int64, intr domain.Interactive) error
+	IncrReadCntIfPresent(ctx context.Context, biz string, bizID int64) error
+	DecrLikeCntIfPresent(ctx context.Context, biz string, bizID int64) error
+	IncrLikeCntIfPresent(ctx context.Context, biz string, bizID int64) error
+	IncrCollectCntIfPresent(ctx context.Context, biz string, bizID int64) error
+	BatchIncrLikeCntIfPresent(ctx context.Context, biz string, bizIDs []int64) error
+	BatchDecrLikeCntIfPresent(ctx context.Context, biz string, bizIDs []int64) error
+	BatchSetLikeCnt(ctx context.Context, biz string, bizIDs []int64, cnts []int64) ([]string, error)
+}
 
 const (
 	fieldReadCnt    = "read_cnt"
@@ -37,7 +48,7 @@ type interactiveCache struct {
 	client redis.Cmdable
 }
 
-func NewInteractiveCache(client redis.Cmdable) cache.InteractiveCache {
+func NewInteractiveCache(client redis.Cmdable) InteractiveCache {
 	return &interactiveCache{client: client}
 }
 

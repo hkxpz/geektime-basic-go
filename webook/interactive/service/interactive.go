@@ -5,9 +5,9 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"geektime-basic-go/webook/internal/domain"
-	events "geektime-basic-go/webook/internal/events/article"
-	"geektime-basic-go/webook/internal/repository"
+	"geektime-basic-go/webook/interactive/domain"
+	events "geektime-basic-go/webook/interactive/events/article"
+	"geektime-basic-go/webook/interactive/repository"
 	"geektime-basic-go/webook/pkg/logger"
 )
 
@@ -66,7 +66,8 @@ func (svc *interactiveService) CancelLike(ctx context.Context, biz string, bizID
 	return svc.repo.DecrLike(ctx, biz, bizID, uid)
 }
 
-func (svc *interactiveService) Like(ctx context.Context, biz string, bizId int64, uid int64) error {
+func (svc *interactiveService) Like(ctx context.Context, biz string, bizID int64, uid int64) error {
+	return svc.repo.IncrLike(ctx, biz, bizID, uid)
 }
 
 func (svc *interactiveService) LikeJob(ctx context.Context, biz string, bizID int64, uid int64, like bool) error {

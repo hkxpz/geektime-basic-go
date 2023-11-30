@@ -3,11 +3,11 @@ package ioc
 import (
 	"fmt"
 
-	"geektime-basic-go/webook/internal/events"
-	"geektime-basic-go/webook/internal/events/article"
-
 	"github.com/IBM/sarama"
 	"github.com/spf13/viper"
+
+	"geektime-basic-go/webook/interactive/events"
+	"geektime-basic-go/webook/interactive/events/article"
 )
 
 func InitKafka() sarama.Client {

@@ -7,8 +7,8 @@ import (
 
 	"github.com/IBM/sarama"
 
-	"geektime-basic-go/webook/internal/events"
-	"geektime-basic-go/webook/internal/repository"
+	"geektime-basic-go/webook/interactive/events"
+	"geektime-basic-go/webook/interactive/repository"
 	"geektime-basic-go/webook/pkg/logger"
 	"geektime-basic-go/webook/pkg/saramax"
 )

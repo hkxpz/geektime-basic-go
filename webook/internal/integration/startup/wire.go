@@ -6,7 +6,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 
-	events "geektime-basic-go/webook/internal/events/article"
+	events "geektime-basic-go/webook/interactive/events/article"
+	intrrepo "geektime-basic-go/webook/interactive/repository"
+	intrcache "geektime-basic-go/webook/interactive/repository/cache"
+	intrdao "geektime-basic-go/webook/interactive/repository/dao"
+	intrscv "geektime-basic-go/webook/interactive/service"
 	"geektime-basic-go/webook/internal/repository"
 	redisCache "geektime-basic-go/webook/internal/repository/cache/redis"
 	"geektime-basic-go/webook/internal/repository/dao"
@@ -47,10 +51,10 @@ var codeSvcProvider = wire.NewSet(
 )
 
 var interactiveSvcProvider = wire.NewSet(
-	service.NewInteractiveService,
-	repository.NewInteractiveRepository,
-	dao.NewInteractiveDAO,
-	redisCache.NewInteractiveCache,
+	intrscv.NewInteractiveService,
+	intrrepo.NewInteractiveRepository,
+	intrdao.NewInteractiveDAO,
+	intrcache.NewInteractiveCache,
 )
 
 var eventsProvider = wire.NewSet(
@@ -133,11 +137,11 @@ func InitInteractiveLikeEventConsumer() *events.ChangeLikeEventConsumer {
 	return new(events.ChangeLikeEventConsumer)
 }
 
-func InitInteractiveService() service.InteractiveService {
+func InitInteractiveService() intrscv.InteractiveService {
 	wire.Build(
 		thirdProvider,
 		interactiveSvcProvider,
 		events.NewChangeLikeSaramaSyncProducer,
 	)
-	return service.NewInteractiveService(nil, nil, nil)
+	return intrscv.NewInteractiveService(nil, nil, nil)
 }

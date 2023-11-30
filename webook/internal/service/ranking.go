@@ -8,6 +8,7 @@ import (
 	"github.com/ecodeclub/ekit/queue"
 	"github.com/ecodeclub/ekit/slice"
 
+	intrsvc "geektime-basic-go/webook/interactive/service"
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/repository"
 )
@@ -20,14 +21,14 @@ type RankingService interface {
 
 type batchRankingService struct {
 	artSvc    ArticleService
-	intrSvc   InteractiveService
+	intrSvc   intrsvc.InteractiveService
 	repo      repository.RankingRepository
 	BatchSize int
 	N         int
 	soreFunc  func(likeCnt int64, updateAt time.Time) float64
 }
 
-func NewBatchRankingService(artSvc ArticleService, intrSvc InteractiveService, repo repository.RankingRepository) RankingService {
+func NewBatchRankingService(artSvc ArticleService, intrSvc intrsvc.InteractiveService, repo repository.RankingRepository) RankingService {
 	svc := &batchRankingService{artSvc: artSvc, intrSvc: intrSvc, repo: repo, BatchSize: 100, N: 100}
 	svc.soreFunc = svc.score
 	return svc

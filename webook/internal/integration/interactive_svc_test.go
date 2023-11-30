@@ -10,15 +10,19 @@ import (
 	"golang.org/x/net/context"
 	"gorm.io/gorm"
 
-	"geektime-basic-go/webook/internal/domain"
+	"geektime-basic-go/webook/interactive/domain"
+	"geektime-basic-go/webook/interactive/repository/dao"
 	"geektime-basic-go/webook/internal/integration/startup"
-	"geektime-basic-go/webook/internal/repository/dao"
 )
 
 type InteractiveTestSuite struct {
 	suite.Suite
 	db  *gorm.DB
 	rdb redis.Cmdable
+}
+
+func TestInteractiveService(t *testing.T) {
+	suite.Run(t, &InteractiveTestSuite{})
 }
 
 func (s *InteractiveTestSuite) SetupSuite() {
@@ -770,8 +774,4 @@ func (s *InteractiveTestSuite) TestGetByIds() {
 			assert.Equal(t, tc.wantRes, res)
 		})
 	}
-}
-
-func TestInteractiveService(t *testing.T) {
-	suite.Run(t, &InteractiveTestSuite{})
 }

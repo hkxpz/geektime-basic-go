@@ -32,18 +32,6 @@ type ArticleCache interface {
 	Set(ctx context.Context, article domain.Article) error
 }
 
-type InteractiveCache interface {
-	Get(ctx context.Context, biz string, bizID int64) (domain.Interactive, error)
-	Set(ctx context.Context, biz string, bizID int64, intr domain.Interactive) error
-	IncrReadCntIfPresent(ctx context.Context, biz string, bizID int64) error
-	DecrLikeCntIfPresent(ctx context.Context, biz string, bizID int64) error
-	IncrLikeCntIfPresent(ctx context.Context, biz string, bizID int64) error
-	IncrCollectCntIfPresent(ctx context.Context, biz string, bizID int64) error
-	BatchIncrLikeCntIfPresent(ctx context.Context, biz string, bizIDs []int64) error
-	BatchDecrLikeCntIfPresent(ctx context.Context, biz string, bizIDs []int64) error
-	BatchSetLikeCnt(ctx context.Context, biz string, bizIDs []int64, cnts []int64) ([]string, error)
-}
-
 type RankingCache interface {
 	Set(ctx context.Context, arts []domain.Article) error
 	Get(ctx context.Context) ([]domain.Article, error)

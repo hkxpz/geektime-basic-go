@@ -10,6 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sync/errgroup"
 
+	intrdomain "geektime-basic-go/webook/interactive/domain"
+	intrsvc "geektime-basic-go/webook/interactive/service"
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/errs"
 	"geektime-basic-go/webook/internal/service"
@@ -19,12 +21,12 @@ import (
 
 type Handler struct {
 	svc     service.ArticleService
-	intrSvc service.InteractiveService
+	intrSvc intrsvc.InteractiveService
 	l       logger.Logger
 	biz     string
 }
 
-func NewArticleHandler(svc service.ArticleService, intrSvc service.InteractiveService, l logger.Logger) *Handler {
+func NewArticleHandler(svc service.ArticleService, intrSvc intrsvc.InteractiveService, l logger.Logger) *Handler {
 	return &Handler{svc: svc, l: l, biz: "article", intrSvc: intrSvc}
 }
 
@@ -77,7 +79,7 @@ func (ah *Handler) PubDetail(ctx *gin.Context, uc hf.UserClaims) (hf.Response, e
 	var (
 		eg   errgroup.Group
 		art  domain.Article
-		intr domain.Interactive
+		intr intrdomain.Interactive
 	)
 
 	eg.Go(func() (err error) {

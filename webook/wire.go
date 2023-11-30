@@ -5,7 +5,11 @@ package main
 import (
 	"github.com/google/wire"
 
-	events "geektime-basic-go/webook/internal/events/article"
+	events "geektime-basic-go/webook/interactive/events/article"
+	intrrepo "geektime-basic-go/webook/interactive/repository"
+	intrcache "geektime-basic-go/webook/interactive/repository/cache"
+	intrdao "geektime-basic-go/webook/interactive/repository/dao"
+	intrscv "geektime-basic-go/webook/interactive/service"
 	"geektime-basic-go/webook/internal/repository"
 	"geektime-basic-go/webook/internal/repository/cache/memory"
 	cache "geektime-basic-go/webook/internal/repository/cache/redis"
@@ -50,10 +54,10 @@ var articleSvcProvider = wire.NewSet(
 )
 
 var interactiveSvcProvider = wire.NewSet(
-	service.NewInteractiveService,
-	repository.NewInteractiveRepository,
-	dao.NewInteractiveDAO,
-	cache.NewInteractiveCache,
+	intrscv.NewInteractiveService,
+	intrrepo.NewInteractiveRepository,
+	intrdao.NewInteractiveDAO,
+	intrcache.NewInteractiveCache,
 )
 
 var rankServiceProvider = wire.NewSet(

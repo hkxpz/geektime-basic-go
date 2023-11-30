@@ -10,8 +10,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
 
-	"geektime-basic-go/webook/internal/events"
-	"geektime-basic-go/webook/internal/repository"
+	"geektime-basic-go/webook/interactive/events"
+	"geektime-basic-go/webook/interactive/repository"
 	"geektime-basic-go/webook/pkg/logger"
 	"geektime-basic-go/webook/pkg/saramax"
 )
@@ -37,7 +37,7 @@ func NewChangeLikeSaramaSyncProducer(producer sarama.SyncProducer) ChangeLikePro
 }
 
 func (p *changeLikeSaramaSyncProducer) ProduceChangeLikeEvent(ctx context.Context, evt ChangeLikeEvent) error {
-	tracer := otel.GetTracerProvider().Tracer("webook/internal/events/article/change_like")
+	tracer := otel.GetTracerProvider().Tracer("webook/interactive/events/article/change_like")
 	_, span := tracer.Start(ctx, "produceChangeLikeEvent", trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 	val, err := json.Marshal(evt)

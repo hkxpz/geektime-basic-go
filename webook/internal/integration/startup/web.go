@@ -51,7 +51,6 @@ func Middlewares(cmd redis.Cmdable, jwtHandler myjwt.Handler, l logger.Logger) [
 		ConstLabels: map[string]string{"instanceID": "instance-1"},
 	})
 	return []gin.HandlerFunc{
-		//ginRatelimit.NewBuilder(ratelimit.NewRedisSlideWindowLimiter(cmd, time.Minute, 100)).Build(),
 		corsHandler(),
 		pb.BuildResponseTime(),
 		pb.BuildActiveRequest(),
