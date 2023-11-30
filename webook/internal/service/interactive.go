@@ -15,7 +15,9 @@ import (
 type InteractiveService interface {
 	IncrReadCnt(ctx context.Context, biz string, bizID int64) error
 	Get(ctx context.Context, biz string, bizID int64, uid int64) (domain.Interactive, error)
-	Like(ctx context.Context, biz string, bizID int64, uid int64, like bool) error
+	Like(ctx context.Context, biz string, bizID int64, uid int64) error
+	CancelLike(ctx context.Context, biz string, bizID int64, uid int64) error
+	LikeJob(ctx context.Context, biz string, bizID int64, uid int64, like bool) error
 	Collect(ctx context.Context, biz string, bizID int64, cid int64, uid int64) error
 	GetByIDs(ctx context.Context, biz string, bizIDs []int64) (map[int64]domain.Interactive, error)
 }
@@ -64,7 +66,10 @@ func (svc *interactiveService) CancelLike(ctx context.Context, biz string, bizID
 	return svc.repo.DecrLike(ctx, biz, bizID, uid)
 }
 
-func (svc *interactiveService) Like(ctx context.Context, biz string, bizID int64, uid int64, like bool) error {
+func (svc *interactiveService) Like(ctx context.Context, biz string, bizId int64, uid int64) error {
+}
+
+func (svc *interactiveService) LikeJob(ctx context.Context, biz string, bizID int64, uid int64, like bool) error {
 	return svc.producer.ProduceChangeLikeEvent(ctx, events.ChangeLikeEvent{BizID: bizID, Uid: uid, Liked: like})
 }
 

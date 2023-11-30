@@ -158,7 +158,7 @@ func (ah *Handler) List(ctx *gin.Context, req LimitReq, uc hf.UserClaims) (hf.Re
 }
 
 func (ah *Handler) Like(ctx *gin.Context, req LikeReq, uc hf.UserClaims) (hf.Response, error) {
-	if err := ah.intrSvc.Like(ctx.Request.Context(), ah.biz, req.ID, uc.ID, req.Like); err != nil {
+	if err := ah.intrSvc.LikeJob(ctx.Request.Context(), ah.biz, req.ID, uc.ID, req.Like); err != nil {
 		return hf.InternalServerErrorWith(errs.ArticleInternalServerError), err
 	}
 	return hf.RespSuccess("OK"), nil

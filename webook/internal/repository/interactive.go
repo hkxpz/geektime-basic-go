@@ -113,6 +113,7 @@ func (repo *cacheInteractiveRepository) AddCollectionItem(ctx context.Context, b
 
 func (repo *cacheInteractiveRepository) toDomain(intr dao.Interactive) domain.Interactive {
 	return domain.Interactive{
+		BizID:      intr.BizID,
 		LikeCnt:    intr.LikeCnt,
 		CollectCnt: intr.CollectCnt,
 		ReadCnt:    intr.ReadCnt,

@@ -62,7 +62,7 @@ func (cache *interactiveCache) Get(ctx context.Context, biz string, bizID int64)
 	collectCnt, _ := strconv.ParseInt(data[fieldCollectCnt], 10, 64)
 	lickCnt, _ := strconv.ParseInt(data[fieldLikeCnt], 10, 64)
 	readCnt, _ := strconv.ParseInt(data[fieldReadCnt], 10, 64)
-	return domain.Interactive{ReadCnt: readCnt, LikeCnt: lickCnt, CollectCnt: collectCnt}, err
+	return domain.Interactive{BizID: bizID, ReadCnt: readCnt, LikeCnt: lickCnt, CollectCnt: collectCnt}, err
 }
 
 func (cache *interactiveCache) Set(ctx context.Context, biz string, bizID int64, intr domain.Interactive) error {

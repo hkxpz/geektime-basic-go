@@ -19,7 +19,6 @@ import (
 
 var thirdProvider = wire.NewSet(
 	InitDB,
-	InitLog,
 	InitZapLogger,
 	InitRedis,
 	InitKafka,
@@ -132,4 +131,13 @@ func InitInteractiveLikeEventConsumer() *events.ChangeLikeEventConsumer {
 	)
 
 	return new(events.ChangeLikeEventConsumer)
+}
+
+func InitInteractiveService() service.InteractiveService {
+	wire.Build(
+		thirdProvider,
+		interactiveSvcProvider,
+		events.NewChangeLikeSaramaSyncProducer,
+	)
+	return service.NewInteractiveService(nil, nil, nil)
 }

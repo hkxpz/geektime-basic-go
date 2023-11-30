@@ -55,7 +55,7 @@ type UserLikeBiz struct {
 
 // UserCollectionBiz 收藏的东西
 type UserCollectionBiz struct {
-	Id       int64  `gorm:"primaryKey,autoIncrement"`
+	ID       int64  `gorm:"primaryKey,autoIncrement"`
 	CID      int64  `gorm:"index"`
 	BizID    int64  `gorm:"uniqueIndex:biz_type_id_uid"`
 	Biz      string `gorm:"type:varchar(128);uniqueIndex:biz_type_id_uid"`
@@ -118,7 +118,7 @@ func (dao *gormDAO) GetLikeInfo(ctx context.Context, biz string, bizID int64, ui
 
 func (dao *gormDAO) GetCollectionInfo(ctx context.Context, biz string, bizID int64, uid int64) (UserCollectionBiz, error) {
 	var res UserCollectionBiz
-	err := dao.db.WithContext(ctx).Where("biz = ? AND biz_id = ? AND uid = ?", biz, bizID, uid).Error
+	err := dao.db.WithContext(ctx).Where("biz = ? AND biz_id = ? AND uid = ?", biz, bizID, uid).First(&res).Error
 	return res, err
 }
 
@@ -223,8 +223,8 @@ func (dao *gormDAO) InsertCollectionBiz(ctx context.Context, cb UserCollectionBi
 		}
 		return tx.Clauses(clause.OnConflict{
 			DoUpdates: clause.Assignments(map[string]any{
-				"like_cnt":  gorm.Expr("`like_cnt`+1"),
-				"update_at": now,
+				"collect_cnt": gorm.Expr("`collect_cnt`+1"),
+				"update_at":   now,
 			}),
 		}).Create(&Interactive{
 			CollectCnt: 1,
