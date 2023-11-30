@@ -2,10 +2,10 @@
 
 * 点赞接口推送kafka, 异步增加文章点赞
     * interactive service Like
-      方法: https://github.com/hkxpz/geektime-basic-go/blob/master/webook/internal/service/interactive.go
-    * producer: https://github.com/hkxpz/geektime-basic-go/blob/master/webook/internal/events/article/change_like.go
+      方法: https://github.com/hkxpz/geektime-basic-go/blob/master/webook/interactive/service/interactive.go
+    * producer: https://github.com/hkxpz/geektime-basic-go/blob/master/webook/interactive/events/article/change_like.go
 * consumer
-  批量消费: https://github.com/hkxpz/geektime-basic-go/blob/master/webook/internal/events/article/change_like.go
+  批量消费: https://github.com/hkxpz/geektime-basic-go/blob/master/webook/interactive/events/article/change_like.go
 
 ### 2. 点赞过程
 
@@ -13,14 +13,15 @@
 * 操作缓存
     * 本地缓存 bizID, 如果本地缓存存在bizID, redis自增/减 1
         *
-        BatchIncrLike/BatchDecrLike: https://github.com/hkxpz/geektime-basic-go/blob/master/webook/internal/repository/interactive.go
+        BatchIncrLike/BatchDecrLike: https://github.com/hkxpz/geektime-basic-go/blob/master/webook/interactive/repository/interactive.go
     * 本地缓存没有 bizID, 操作数据库统计文章点赞数并缓存 redis
-        * checkExists: https://github.com/hkxpz/geektime-basic-go/blob/master/webook/internal/repository/interactive.go
         *
-        BatchIncrLikeCntIfPresent/BatchDecrLikeCntIfPresent: https://github.com/hkxpz/geektime-basic-go/blob/master/webook/internal/repository/cache/redis/interactive.go
+        checkExists: https://github.com/hkxpz/geektime-basic-go/blob/master/webook/interactive/repository/interactive.go
+        *
+        BatchIncrLikeCntIfPresent/BatchDecrLikeCntIfPresent: https://github.com/hkxpz/geektime-basic-go/blob/master/webook/interactive/repository/cache/interactive.go
     * redis 存储 1000 个 bizID, 超出部分删除, 同步删除本地缓存的 bizID
         *
-        BatchSetLikeCnt: https://github.com/hkxpz/geektime-basic-go/blob/master/webook/internal/repository/cache/redis/interactive.go
+        BatchSetLikeCnt: https://github.com/hkxpz/geektime-basic-go/blob/master/webook/interactive/repository/cache/interactive.go
 
 ### 3. 压测
 
