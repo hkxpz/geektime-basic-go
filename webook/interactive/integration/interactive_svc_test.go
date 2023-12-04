@@ -11,8 +11,8 @@ import (
 	"gorm.io/gorm"
 
 	"geektime-basic-go/webook/interactive/domain"
+	"geektime-basic-go/webook/interactive/integration/startup"
 	"geektime-basic-go/webook/interactive/repository/dao"
-	"geektime-basic-go/webook/internal/integration/startup"
 )
 
 type InteractiveTestSuite struct {

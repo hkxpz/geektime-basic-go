@@ -7,6 +7,7 @@ import (
 	"gorm.io/plugin/opentelemetry/tracing"
 	"gorm.io/plugin/prometheus"
 
+	intrdao "geektime-basic-go/webook/interactive/repository/dao"
 	"geektime-basic-go/webook/internal/repository/dao"
 	prometheus2 "geektime-basic-go/webook/pkg/gormx/callbacks/prometheus"
 	"geektime-basic-go/webook/pkg/logger"
@@ -59,6 +60,9 @@ func InitDB(l logger.Logger) *gorm.DB {
 	}
 
 	if err = dao.InitTables(db); err != nil {
+		panic(err)
+	}
+	if err = intrdao.InitTables(db); err != nil {
 		panic(err)
 	}
 
