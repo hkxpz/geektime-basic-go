@@ -8,7 +8,7 @@ import (
 	"github.com/ecodeclub/ekit/queue"
 	"github.com/ecodeclub/ekit/slice"
 
-	intrsvc "geektime-basic-go/webook/interactive/service"
+	intr "geektime-basic-go/webook/api/proto/gen/interactive"
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/repository"
 )
@@ -20,16 +20,16 @@ type RankingService interface {
 }
 
 type batchRankingService struct {
-	artSvc    ArticleService
-	intrSvc   intrsvc.InteractiveService
-	repo      repository.RankingRepository
-	BatchSize int
-	N         int
-	soreFunc  func(likeCnt int64, updateAt time.Time) float64
+	artSvc     ArticleService
+	intrClient intr.InteractiveServiceClient
+	repo       repository.RankingRepository
+	BatchSize  int
+	N          int
+	soreFunc   func(likeCnt int64, updateAt time.Time) float64
 }
 
-func NewBatchRankingService(artSvc ArticleService, intrSvc intrsvc.InteractiveService, repo repository.RankingRepository) RankingService {
-	svc := &batchRankingService{artSvc: artSvc, intrSvc: intrSvc, repo: repo, BatchSize: 100, N: 100}
+func NewBatchRankingService(artSvc ArticleService, intrClient intr.InteractiveServiceClient, repo repository.RankingRepository) RankingService {
+	svc := &batchRankingService{artSvc: artSvc, intrClient: intrClient, repo: repo, BatchSize: 100, N: 100}
 	svc.soreFunc = svc.score
 	return svc
 }
@@ -78,18 +78,19 @@ func (svc *batchRankingService) rankTopN(ctx context.Context) ([]domain.Article,
 		artIDs := slice.Map(arts, func(idx int, src domain.Article) int64 {
 			return src.ID
 		})
-		intrMap, err := svc.intrSvc.GetByIDs(ctx, "article", artIDs)
+		res, err := svc.intrClient.GetByIDs(ctx, &intr.GetByIDsRequest{Biz: "article", Ids: artIDs})
 		if err != nil {
 			return nil, err
 		}
 
+		intrMap := res.GetIntrs()
 		for _, art := range arts {
-			intr, ok := intrMap[art.ID]
+			interactive, ok := intrMap[art.ID]
 			if !ok {
 				continue
 			}
 
-			score := svc.soreFunc(intr.LikeCnt, art.UpdateAt)
+			score := svc.soreFunc(interactive.LikeCnt, art.UpdateAt)
 			// 当前分数小于最小分数, 不做处理
 			if score < minScore && que.Len() > 0 {
 				continue

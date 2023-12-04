@@ -6,11 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 
-	events "geektime-basic-go/webook/interactive/events/article"
-	intrrepo "geektime-basic-go/webook/interactive/repository"
-	intrcache "geektime-basic-go/webook/interactive/repository/cache"
-	intrdao "geektime-basic-go/webook/interactive/repository/dao"
-	intrscv "geektime-basic-go/webook/interactive/service"
+	events "geektime-basic-go/webook/internal/events/article"
 	"geektime-basic-go/webook/internal/repository"
 	redisCache "geektime-basic-go/webook/internal/repository/cache/redis"
 	"geektime-basic-go/webook/internal/repository/dao"
@@ -50,19 +46,8 @@ var codeSvcProvider = wire.NewSet(
 	redisCache.NewCodeCache,
 )
 
-var interactiveSvcProvider = wire.NewSet(
-	intrscv.NewInteractiveService,
-	intrrepo.NewInteractiveRepository,
-	intrdao.NewInteractiveDAO,
-	intrcache.NewInteractiveCache,
-)
-
-var eventsProvider = wire.NewSet(
+var producerProvider = wire.NewSet(
 	events.NewSaramaSyncProducer,
-	events.NewInteractiveReadEventConsumer,
-	events.NewInteractiveLikeEventConsumer,
-	events.NewChangeLikeSaramaSyncProducer,
-	NewConsumers,
 )
 
 var HandlerProvider = wire.NewSet(
@@ -77,13 +62,12 @@ func InitWebServer() *gin.Engine {
 		thirdProvider,
 
 		// events 部分
-		eventsProvider,
+		producerProvider,
 
 		// service
 		userSvcProvider,
 		codeSvcProvider,
 		articleSvcProvider,
-		interactiveSvcProvider,
 		InitLocalWechatService,
 
 		// handler 部分
@@ -103,9 +87,7 @@ func InitArticleHandlerWithDAO(dao article.DAO) *webarticle.Handler {
 	wire.Build(
 		thirdProvider,
 		userSvcProvider,
-		interactiveSvcProvider,
 		events.NewSaramaSyncProducer,
-		events.NewChangeLikeSaramaSyncProducer,
 		service.NewArticleService,
 		repository.NewCacheArticleRepository,
 		redisCache.NewArticleCache,
@@ -118,30 +100,9 @@ func InitArticleHandlerWithKafka() *webarticle.Handler {
 	wire.Build(
 		thirdProvider,
 		userSvcProvider,
-		interactiveSvcProvider,
 		articleSvcProvider,
 		events.NewSaramaSyncProducer,
-		events.NewChangeLikeSaramaSyncProducer,
 		webarticle.NewArticleHandler,
 	)
 	return new(webarticle.Handler)
-}
-
-func InitInteractiveLikeEventConsumer() *events.ChangeLikeEventConsumer {
-	wire.Build(
-		thirdProvider,
-		interactiveSvcProvider,
-		events.NewInteractiveLikeEventConsumer,
-	)
-
-	return new(events.ChangeLikeEventConsumer)
-}
-
-func InitInteractiveService() intrscv.InteractiveService {
-	wire.Build(
-		thirdProvider,
-		interactiveSvcProvider,
-		events.NewChangeLikeSaramaSyncProducer,
-	)
-	return intrscv.NewInteractiveService(nil, nil, nil)
 }

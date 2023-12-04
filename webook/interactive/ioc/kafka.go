@@ -1,10 +1,13 @@
-package startup
+package ioc
 
 import (
 	"fmt"
 
 	"github.com/IBM/sarama"
 	"github.com/spf13/viper"
+
+	"geektime-basic-go/webook/interactive/events"
+	"geektime-basic-go/webook/interactive/events/article"
 )
 
 func InitKafka() sarama.Client {
@@ -31,4 +34,9 @@ func NewSyncProducer(client sarama.Client) sarama.SyncProducer {
 		panic(err)
 	}
 	return res
+}
+
+// NewConsumers 面临的问题依旧是所有的 Consumer 在这里注册一下
+func NewConsumers(c1 *article.InteractiveReadEventConsumer, c2 *article.ChangeLikeEventConsumer) []events.Consumer {
+	return []events.Consumer{c1, c2}
 }

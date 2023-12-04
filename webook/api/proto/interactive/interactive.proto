@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+option go_package = "interactive";
+
+service InteractiveService{
+  rpc IncrReadCnt(IncrReadCntRequest) returns (IncrReadCntResponse);;
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc Like(LikeRequest) returns (LikeResponse);
+  rpc Collect(CollectRequest) returns (CollectResponse);
+  rpc GetByIDs(GetByIDsRequest) returns(GetByIDsResponse);
+}
+
+message GetByIDsRequest{
+  string biz = 1;
+  repeated int64 ids = 2;
+}
+
+message GetByIDsResponse{
+  map<int64, Interactive> intrs = 1;
+}
+
+message CollectRequest{
+  string biz = 1;
+  int64 biz_id = 2;
+  int64 cid = 3;
+  int64 uid = 4;
+}
+
+message CollectResponse{}
+
+message LikeRequest{
+  string biz = 1;
+  int64 biz_id = 2;
+  int64 uid = 3;
+  bool liked = 4;
+}
+
+message LikeResponse{}
+
+message GetRequest{
+  string biz = 1;
+  int64 biz_id = 2;
+  int64 uid = 3;
+}
+
+message  GetResponse{
+  Interactive intr = 1;
+}
+
+message Interactive{
+  string biz = 1;
+  int64 biz_id = 2;
+  int64 read_cnt = 3;
+  int64 like_cnt = 4;
+  int64 collect_cnt = 5;
+  bool liked = 6;
+  bool collected = 7;
+}
+
+message IncrReadCntRequest{
+  string biz = 1;
+  int64 biz_id = 2;
+}
+
+message IncrReadCntResponse{}

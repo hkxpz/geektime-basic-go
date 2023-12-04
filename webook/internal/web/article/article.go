@@ -10,8 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sync/errgroup"
 
-	intrdomain "geektime-basic-go/webook/interactive/domain"
-	intrsvc "geektime-basic-go/webook/interactive/service"
+	intr "geektime-basic-go/webook/api/proto/gen/interactive"
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/errs"
 	"geektime-basic-go/webook/internal/service"
@@ -20,14 +19,14 @@ import (
 )
 
 type Handler struct {
-	svc     service.ArticleService
-	intrSvc intrsvc.InteractiveService
-	l       logger.Logger
-	biz     string
+	svc        service.ArticleService
+	intrClient intr.InteractiveServiceClient
+	l          logger.Logger
+	biz        string
 }
 
-func NewArticleHandler(svc service.ArticleService, intrSvc intrsvc.InteractiveService, l logger.Logger) *Handler {
-	return &Handler{svc: svc, l: l, biz: "article", intrSvc: intrSvc}
+func NewArticleHandler(svc service.ArticleService, intrClient intr.InteractiveServiceClient, l logger.Logger) *Handler {
+	return &Handler{svc: svc, l: l, biz: "article", intrClient: intrClient}
 }
 
 func (ah *Handler) RegisterRoutes(s *gin.Engine) {
@@ -77,9 +76,9 @@ func (ah *Handler) PubDetail(ctx *gin.Context, uc hf.UserClaims) (hf.Response, e
 	}
 
 	var (
-		eg   errgroup.Group
-		art  domain.Article
-		intr intrdomain.Interactive
+		eg       errgroup.Group
+		art      domain.Article
+		intrResp *intr.GetResponse
 	)
 
 	eg.Go(func() (err error) {
@@ -87,7 +86,7 @@ func (ah *Handler) PubDetail(ctx *gin.Context, uc hf.UserClaims) (hf.Response, e
 		return
 	})
 	eg.Go(func() (err error) {
-		intr, err = ah.intrSvc.Get(ctx, ah.biz, id, uc.ID)
+		intrResp, err = ah.intrClient.Get(ctx, &intr.GetRequest{Biz: ah.biz, BizId: id, Uid: uc.ID})
 		return
 	})
 	if err = eg.Wait(); err != nil {
@@ -103,11 +102,11 @@ func (ah *Handler) PubDetail(ctx *gin.Context, uc hf.UserClaims) (hf.Response, e
 		Author:     art.Author.Name,
 		CreateAt:   art.CreateAt.Format(time.DateTime),
 		UpdateAt:   art.UpdateAt.Format(time.DateTime),
-		ReadCnt:    intr.ReadCnt,
-		CollectCnt: intr.CollectCnt,
-		LikeCnt:    intr.LikeCnt,
-		Liked:      intr.Liked,
-		Collected:  intr.Collected,
+		ReadCnt:    intrResp.Intr.ReadCnt,
+		CollectCnt: intrResp.Intr.CollectCnt,
+		LikeCnt:    intrResp.Intr.LikeCnt,
+		Liked:      intrResp.Intr.Liked,
+		Collected:  intrResp.Intr.Collected,
 	}}, nil
 }
 
@@ -160,14 +159,14 @@ func (ah *Handler) List(ctx *gin.Context, req LimitReq, uc hf.UserClaims) (hf.Re
 }
 
 func (ah *Handler) Like(ctx *gin.Context, req LikeReq, uc hf.UserClaims) (hf.Response, error) {
-	if err := ah.intrSvc.LikeJob(ctx.Request.Context(), ah.biz, req.ID, uc.ID, req.Like); err != nil {
+	if _, err := ah.intrClient.Like(ctx.Request.Context(), &intr.LikeRequest{Biz: ah.biz, BizId: req.ID, Uid: uc.ID, Liked: req.Like}); err != nil {
 		return hf.InternalServerErrorWith(errs.ArticleInternalServerError), err
 	}
 	return hf.RespSuccess("OK"), nil
 }
 
 func (ah *Handler) Collect(ctx *gin.Context, req CollectReq, uc hf.UserClaims) (hf.Response, error) {
-	if err := ah.intrSvc.Collect(ctx, ah.biz, req.ID, req.CID, uc.ID); err != nil {
+	if _, err := ah.intrClient.Collect(ctx, &intr.CollectRequest{Biz: ah.biz, BizId: req.ID, Cid: req.CID, Uid: uc.ID}); err != nil {
 		return hf.InternalServerErrorWith(errs.ArticleInternalServerError), err
 	}
 	return hf.RespSuccess("OK"), nil

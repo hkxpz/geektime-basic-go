@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	events "geektime-basic-go/webook/interactive/events/article"
 	"geektime-basic-go/webook/internal/domain"
+	events "geektime-basic-go/webook/internal/events/article"
 	"geektime-basic-go/webook/internal/repository"
 	"geektime-basic-go/webook/pkg/logger"
 )

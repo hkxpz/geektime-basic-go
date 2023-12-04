@@ -5,11 +5,14 @@ package main
 import (
 	"github.com/google/wire"
 
-	events "geektime-basic-go/webook/interactive/events/article"
+	intrevents "geektime-basic-go/webook/interactive/events/article"
+	intrioc "geektime-basic-go/webook/interactive/ioc"
 	intrrepo "geektime-basic-go/webook/interactive/repository"
 	intrcache "geektime-basic-go/webook/interactive/repository/cache"
 	intrdao "geektime-basic-go/webook/interactive/repository/dao"
 	intrscv "geektime-basic-go/webook/interactive/service"
+
+	events "geektime-basic-go/webook/internal/events/article"
 	"geektime-basic-go/webook/internal/repository"
 	"geektime-basic-go/webook/internal/repository/cache/memory"
 	cache "geektime-basic-go/webook/internal/repository/cache/redis"
@@ -23,12 +26,23 @@ import (
 	"geektime-basic-go/webook/ioc/sms"
 )
 
+// todo 后续移除
+var interactiveSvcProvider = wire.NewSet(
+	intrscv.NewInteractiveService,
+	intrrepo.NewInteractiveRepository,
+	intrdao.NewInteractiveDAO,
+	intrcache.NewInteractiveCache,
+	intrevents.NewChangeLikeSaramaSyncProducer,
+	intrevents.NewInteractiveLikeEventConsumer,
+	intrevents.NewInteractiveReadEventConsumer,
+	intrioc.NewConsumers,
+)
+
 var thirdProvider = wire.NewSet(
 	ioc.InitDB,
 	ioc.InitRedis,
 	ioc.InitZapLogger,
 	ioc.InitKafka,
-	ioc.NewSyncProducer,
 	ioc.InitRLockClient,
 )
 
@@ -53,13 +67,6 @@ var articleSvcProvider = wire.NewSet(
 	cache.NewArticleCache,
 )
 
-var interactiveSvcProvider = wire.NewSet(
-	intrscv.NewInteractiveService,
-	intrrepo.NewInteractiveRepository,
-	intrdao.NewInteractiveDAO,
-	intrcache.NewInteractiveCache,
-)
-
 var rankServiceProvider = wire.NewSet(
 	service.NewBatchRankingService,
 	repository.NewCacheRankingRepository,
@@ -74,12 +81,13 @@ var HandlerProvider = wire.NewSet(
 	webarticle.NewArticleHandler,
 )
 
-var eventsProvider = wire.NewSet(
+var producerProvider = wire.NewSet(
+	ioc.NewSyncProducer,
 	events.NewSaramaSyncProducer,
-	events.NewInteractiveReadEventConsumer,
-	events.NewChangeLikeSaramaSyncProducer,
-	events.NewInteractiveLikeEventConsumer,
-	ioc.NewConsumers,
+)
+
+var grpcClientProvider = wire.NewSet(
+	ioc.InitInteractiveGRPCClient,
 )
 
 var jobProvider = wire.NewSet(
@@ -90,9 +98,13 @@ var jobProvider = wire.NewSet(
 func InitApp() *App {
 	wire.Build(
 		thirdProvider,
+		grpcClientProvider,
+
+		// todo 后续移除
+		interactiveSvcProvider,
 
 		// events 部分
-		eventsProvider,
+		producerProvider,
 
 		// job 部分
 		jobProvider,
@@ -101,7 +113,6 @@ func InitApp() *App {
 		userSvcProvider,
 		codeSvcProvider,
 		articleSvcProvider,
-		interactiveSvcProvider,
 		rankServiceProvider,
 		ioc.InitLocalWechatService,
 
