@@ -68,6 +68,10 @@ func NewScheduler(svc service.CronJobService, l logger.Logger) *Scheduler {
 	}
 }
 
+func (s *Scheduler) RegisterJob(ctx context.Context, j CronJob) error {
+	return s.svc.AddJob(ctx, j)
+}
+
 func (s *Scheduler) RegisterExecutor(exec Executor) {
 	s.execs[exec.Name()] = exec
 }
@@ -118,3 +122,7 @@ func (s *Scheduler) Start(ctx context.Context) error {
 		}()
 	}
 }
+
+// CronJob 使用别名来做一个解耦
+// 后续万一我们要加字段，就很方便扩展
+type CronJob = domain.CronJob
