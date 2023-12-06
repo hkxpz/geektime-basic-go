@@ -53,10 +53,14 @@ func (dao *gormCronJobDAO) Preempt(ctx context.Context) (Job, error) {
 	db := dao.db.WithContext(ctx)
 	for {
 		// 每一个循环都重新计算 time.Now，因为之前可能已经花了一些时间了
-		now := time.Now().UnixMilli()
+		nowTime := time.Now()
+		now := nowTime.UnixMilli()
 		var j Job
 		// 到了调度的时间
-		if err := db.Where("next_time <= ? AND status = ?", now, jobStatusWaiting).First(&j).Error; err != nil {
+		// 任务处于运行转态, 且 5分钟内没有更新转态, 可以认为节点崩溃了, 可以重新调度
+		if err := db.Where("next_time <= ? AND status = ?", now, jobStatusWaiting).
+			Or("status = ? AND update_at <=", jobStatusRunning, nowTime.Add(-5*time.Minute).UnixMilli()).
+			First(&j).Error; err != nil {
 			return Job{}, err
 		}
 
