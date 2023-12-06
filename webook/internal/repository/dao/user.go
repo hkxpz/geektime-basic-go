@@ -17,7 +17,7 @@ var ErrDataNotFound = gorm.ErrRecordNotFound
 
 var ErrUserDuplicate = errors.New("用户邮箱或者手机号冲突")
 
-//go:generate mockgen -source=user.go -package=mocks -destination=mocks/user_mock_gen.go UserDAO
+//go:generate mockgen -source=user.go -package=svcmocks -destination=mocks/user_mock_gen.go UserDAO
 type UserDAO interface {
 	Insert(ctx context.Context, u User) error
 	Update(ctx context.Context, u User) error

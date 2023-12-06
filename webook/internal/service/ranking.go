@@ -13,7 +13,7 @@ import (
 	"geektime-basic-go/webook/internal/repository"
 )
 
-//go:generate mockgen -source=ranking.go -package=mocks -destination=mocks/ranking_mock_gen.go RankingService
+//go:generate mockgen -source=ranking.go -package=svcmocks -destination=mocks/ranking_mock_gen.go RankingService
 type RankingService interface {
 	RankTopN(ctx context.Context) error
 	TopN(ctx context.Context) ([]domain.Article, error)

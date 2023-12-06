@@ -12,7 +12,7 @@ import (
 	"geektime-basic-go/webook/pkg/logger"
 )
 
-//go:generate mockgen -source=article.go -package=mocks -destination=mocks/article_mock_gen.go ArticleService
+//go:generate mockgen -source=article.go -package=svcmocks -destination=mocks/article_mock_gen.go ArticleService
 type ArticleService interface {
 	Save(ctx context.Context, art domain.Article) (int64, error)
 	Publish(ctx context.Context, art domain.Article) (int64, error)

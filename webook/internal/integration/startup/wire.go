@@ -106,3 +106,16 @@ func InitArticleHandlerWithKafka() *webarticle.Handler {
 	)
 	return new(webarticle.Handler)
 }
+
+func InitArticleHandlerWithDAO(dao article.DAO) *webarticle.Handler {
+	wire.Build(
+		thirdProvider,
+		userSvcProvider,
+		events.NewSaramaSyncProducer,
+		service.NewArticleService,
+		repository.NewCacheArticleRepository,
+		redisCache.NewArticleCache,
+		webarticle.NewArticleHandler,
+	)
+	return new(webarticle.Handler)
+}

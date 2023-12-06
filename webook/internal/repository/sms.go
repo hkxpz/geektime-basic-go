@@ -7,7 +7,7 @@ import (
 	"geektime-basic-go/webook/internal/repository/dao"
 )
 
-//go:generate mockgen -source=sms.go -package=mocks -destination=mocks/sms_mock_gen.go SMSRepository
+//go:generate mockgen -source=sms.go -package=svcmocks -destination=mocks/sms_mock_gen.go SMSRepository
 type SMSRepository interface {
 	Store(ctx context.Context, msg domain.SMS) error
 	FindRetryWithMaxRetry(ctx context.Context, maxRetry int64, status int64) ([]dao.SMS, error)
