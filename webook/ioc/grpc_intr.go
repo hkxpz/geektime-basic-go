@@ -40,7 +40,7 @@ func InitInteractiveGRPCClient(svc service.InteractiveService, l logger.Logger) 
 
 	viper.OnConfigChange(func(in fsnotify.Event) {
 		cfg = Config{}
-		if e := viper.UnmarshalKey("grpc.client.intr", cfg); e != nil {
+		if e := viper.UnmarshalKey("grpc.client.intr", &cfg); e != nil {
 			l.Error("重新加载 grpc.client.intr 的配置失败", logger.Error(e))
 			return
 		}

@@ -5,14 +5,15 @@ import (
 	"log"
 	"net/http"
 
-	"geektime-basic-go/webook/ioc"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"geektime-basic-go/webook/ioc"
 )
 
 func main() {
 	gin.SetMode(gin.ReleaseMode)
-	ioc.InitViper()
+	ioc.InitViperWatch()
 	initPrometheus()
 	cancel := ioc.InitOTEL()
 	defer cancel(context.Background())

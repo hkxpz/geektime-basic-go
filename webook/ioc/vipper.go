@@ -14,6 +14,11 @@ func InitViper() {
 	}
 }
 
+func InitViperWatch() {
+	InitViper()
+	viper.WatchConfig()
+}
+
 func InitViperRemote() {
 	remote := pflag.String("remote", "127.0.0.1", "配置中心地址")
 	pflag.Parse()
