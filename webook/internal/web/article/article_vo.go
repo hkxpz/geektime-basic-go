@@ -42,7 +42,7 @@ type LikeReq struct {
 
 type CollectReq struct {
 	ID  int64 `json:"id"`
-	CID int64 `json:"cid"`
+	Cid int64 `json:"cid"`
 }
 
 func (req *Req) toDomain(uid int64) domain.Article {

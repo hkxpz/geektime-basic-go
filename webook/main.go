@@ -19,12 +19,6 @@ func main() {
 	defer cancel(context.Background())
 
 	app := InitApp()
-	for _, consumer := range app.consumers {
-		if err := consumer.Start(); err != nil {
-			panic(err)
-		}
-	}
-
 	app.cron.Start()
 	defer func() {
 		<-app.cron.Stop().Done()

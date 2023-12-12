@@ -43,3 +43,25 @@ type Author struct {
 	ID   int64
 	Name string
 }
+
+type Vo struct {
+	ID    int64  `json:"id"`
+	Title string `json:"title"`
+	// 摘要
+	Abstract string `json:"abstract"`
+	// 内容
+	Content  string `json:"content"`
+	Status   uint8  `json:"status"`
+	Author   string `json:"author"`
+	CreateAt string `json:"create_at"`
+	UpdateAt string `json:"update_at"`
+
+	// 点赞之类的信息
+	LikeCnt    int64 `json:"likeCnt"`
+	CollectCnt int64 `json:"collectCnt"`
+	ReadCnt    int64 `json:"readCnt"`
+
+	// 个人是否点赞的信息
+	Liked     bool `json:"liked"`
+	Collected bool `json:"collected"`
+}

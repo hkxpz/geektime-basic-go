@@ -5,7 +5,9 @@ import (
 	"time"
 
 	"github.com/ecodeclub/ekit/slice"
+	"golang.org/x/sync/errgroup"
 
+	intr "geektime-basic-go/webook/api/proto/gen/interactive"
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/repository/cache"
 	"geektime-basic-go/webook/internal/repository/dao/article"
@@ -18,21 +20,25 @@ type ArticleRepository interface {
 	Update(ctx context.Context, art domain.Article) error
 	Sync(ctx context.Context, art domain.Article) (int64, error)
 	SyncStatus(ctx context.Context, uid, id int64, status domain.ArticleStatus) error
-	GetPublishedById(ctx context.Context, id int64) (domain.Article, error)
+	GetPublishedByID(ctx context.Context, id int64) (domain.Article, error)
 	GetById(ctx context.Context, id int64) (domain.Article, error)
 	List(ctx context.Context, author int64, offset int, limit int) ([]domain.Article, error)
 	ListPub(ctx context.Context, updateAt time.Time, offset int, limit int) ([]domain.Article, error)
+	PubDetail(ctx context.Context, bizID int64, uid int64) (domain.Vo, error)
+	Collect(ctx context.Context, biz string, bizID int64, cid int64, uid int64) error
+	Like(ctx context.Context, biz string, bizID int64, uid int64, like bool) error
 }
 
 type cacheArticleRepository struct {
 	dao      article.DAO
 	userRepo UserRepository
 	cache    cache.ArticleCache
+	rpc      intr.InteractiveServiceClient
 	l        logger.Logger
 }
 
-func NewCacheArticleRepository(dao article.DAO, userRepo UserRepository, cache cache.ArticleCache, l logger.Logger) ArticleRepository {
-	return &cacheArticleRepository{dao: dao, userRepo: userRepo, cache: cache, l: l}
+func NewCacheArticleRepository(dao article.DAO, userRepo UserRepository, cache cache.ArticleCache, rpc intr.InteractiveServiceClient, l logger.Logger) ArticleRepository {
+	return &cacheArticleRepository{dao: dao, userRepo: userRepo, cache: cache, rpc: rpc, l: l}
 }
 
 func (repo *cacheArticleRepository) Create(ctx context.Context, art domain.Article) (int64, error) {
@@ -108,7 +114,7 @@ func (repo *cacheArticleRepository) toDomain(art article.Article) domain.Article
 	}
 }
 
-func (repo *cacheArticleRepository) GetPublishedById(ctx context.Context, id int64) (domain.Article, error) {
+func (repo *cacheArticleRepository) GetPublishedByID(ctx context.Context, id int64) (domain.Article, error) {
 	res, err := repo.cache.GetPub(ctx, id)
 	if err == nil {
 		return res, err
@@ -191,4 +197,49 @@ func (repo *cacheArticleRepository) ListPub(ctx context.Context, updateAt time.T
 	return slice.Map(val, func(idx int, src article.PublishedArticle) domain.Article {
 		return repo.toDomain(article.Article(src))
 	}), nil
+}
+
+func (repo *cacheArticleRepository) PubDetail(ctx context.Context, bizID int64, uid int64) (domain.Vo, error) {
+	var (
+		eg        errgroup.Group
+		art       domain.Article
+		interResp *intr.GetResponse
+	)
+
+	eg.Go(func() (err error) {
+		art, err = repo.GetPublishedByID(ctx, bizID)
+		return
+	})
+	eg.Go(func() (err error) {
+		interResp, err = repo.rpc.Get(ctx, &intr.GetRequest{Biz: "interactive", BizId: bizID, Uid: uid})
+		return
+	})
+	if err := eg.Wait(); err != nil {
+		return domain.Vo{}, err
+	}
+
+	return domain.Vo{
+		ID:         art.ID,
+		Title:      art.Title,
+		Status:     art.Status.ToUint8(),
+		Content:    art.Content,
+		Author:     art.Author.Name,
+		CreateAt:   art.CreateAt.Format(time.DateTime),
+		UpdateAt:   art.UpdateAt.Format(time.DateTime),
+		ReadCnt:    interResp.Intr.ReadCnt,
+		CollectCnt: interResp.Intr.CollectCnt,
+		LikeCnt:    interResp.Intr.LikeCnt,
+		Liked:      interResp.Intr.Liked,
+		Collected:  interResp.Intr.Collected,
+	}, nil
+}
+
+func (repo *cacheArticleRepository) Like(ctx context.Context, biz string, bizID int64, uid int64, like bool) error {
+	_, err := repo.rpc.Like(ctx, &intr.LikeRequest{Biz: biz, BizId: bizID, Uid: uid, Liked: like})
+	return err
+}
+
+func (repo *cacheArticleRepository) Collect(ctx context.Context, biz string, bizID int64, cid int64, uid int64) error {
+	_, err := repo.rpc.Collect(ctx, &intr.CollectRequest{Biz: biz, BizId: bizID, Cid: cid, Uid: uid})
+	return err
 }

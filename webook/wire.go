@@ -87,7 +87,7 @@ var producerProvider = wire.NewSet(
 )
 
 var grpcClientProvider = wire.NewSet(
-	ioc.InitInteractiveGRPCClient,
+	ioc.InitInteractiveRPC,
 )
 
 var jobProvider = wire.NewSet(

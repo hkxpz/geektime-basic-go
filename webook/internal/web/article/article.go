@@ -8,9 +8,7 @@ import (
 
 	"github.com/ecodeclub/ekit/slice"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/sync/errgroup"
 
-	intr "geektime-basic-go/webook/api/proto/gen/interactive"
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/errs"
 	"geektime-basic-go/webook/internal/service"
@@ -19,14 +17,13 @@ import (
 )
 
 type Handler struct {
-	svc        service.ArticleService
-	intrClient intr.InteractiveServiceClient
-	l          logger.Logger
-	biz        string
+	svc service.ArticleService
+	l   logger.Logger
+	biz string
 }
 
-func NewArticleHandler(svc service.ArticleService, intrClient intr.InteractiveServiceClient, l logger.Logger) *Handler {
-	return &Handler{svc: svc, l: l, biz: "article", intrClient: intrClient}
+func NewArticleHandler(svc service.ArticleService, l logger.Logger) *Handler {
+	return &Handler{svc: svc, l: l, biz: "article"}
 }
 
 func (ah *Handler) RegisterRoutes(s *gin.Engine) {
@@ -75,39 +72,12 @@ func (ah *Handler) PubDetail(ctx *gin.Context, uc hf.UserClaims) (hf.Response, e
 		return hf.Response{Code: errs.ArticleInvalidInput, Msg: "参数错误"}, fmt.Errorf("查询文章详情的 ID %s 不正确, %w", idStr, err)
 	}
 
-	var (
-		eg       errgroup.Group
-		art      domain.Article
-		intrResp *intr.GetResponse
-	)
-
-	eg.Go(func() (err error) {
-		art, err = ah.svc.GetPublishedByID(ctx, id, uc.ID)
-		return
-	})
-	eg.Go(func() (err error) {
-		intrResp, err = ah.intrClient.Get(ctx, &intr.GetRequest{Biz: ah.biz, BizId: id, Uid: uc.ID})
-		return
-	})
-	if err = eg.Wait(); err != nil {
+	art, err := ah.svc.PubDetail(ctx, id, uc.ID)
+	if err != nil {
 		return hf.InternalServerErrorWith(errs.ArticleInternalServerError), fmt.Errorf("获取文章信息失败: %w", err)
 	}
+	return hf.Response{Data: art}, nil
 
-	return hf.Response{Data: Vo{
-		ID:      art.ID,
-		Title:   art.Title,
-		Status:  art.Status.ToUint8(),
-		Content: art.Content,
-		// 要把作者信息带出去
-		Author:     art.Author.Name,
-		CreateAt:   art.CreateAt.Format(time.DateTime),
-		UpdateAt:   art.UpdateAt.Format(time.DateTime),
-		ReadCnt:    intrResp.Intr.ReadCnt,
-		CollectCnt: intrResp.Intr.CollectCnt,
-		LikeCnt:    intrResp.Intr.LikeCnt,
-		Liked:      intrResp.Intr.Liked,
-		Collected:  intrResp.Intr.Collected,
-	}}, nil
 }
 
 func (ah *Handler) Detail(ctx *gin.Context, uc hf.UserClaims) (hf.Response, error) {
@@ -159,14 +129,14 @@ func (ah *Handler) List(ctx *gin.Context, req LimitReq, uc hf.UserClaims) (hf.Re
 }
 
 func (ah *Handler) Like(ctx *gin.Context, req LikeReq, uc hf.UserClaims) (hf.Response, error) {
-	if _, err := ah.intrClient.Like(ctx.Request.Context(), &intr.LikeRequest{Biz: ah.biz, BizId: req.ID, Uid: uc.ID, Liked: req.Like}); err != nil {
+	if err := ah.svc.Like(ctx.Request.Context(), ah.biz, req.ID, uc.ID, req.Like); err != nil {
 		return hf.InternalServerErrorWith(errs.ArticleInternalServerError), err
 	}
 	return hf.RespSuccess("OK"), nil
 }
 
 func (ah *Handler) Collect(ctx *gin.Context, req CollectReq, uc hf.UserClaims) (hf.Response, error) {
-	if _, err := ah.intrClient.Collect(ctx, &intr.CollectRequest{Biz: ah.biz, BizId: req.ID, Cid: req.CID, Uid: uc.ID}); err != nil {
+	if err := ah.svc.Collect(ctx.Request.Context(), ah.biz, req.ID, req.Cid, uc.ID); err != nil {
 		return hf.InternalServerErrorWith(errs.ArticleInternalServerError), err
 	}
 	return hf.RespSuccess("OK"), nil
