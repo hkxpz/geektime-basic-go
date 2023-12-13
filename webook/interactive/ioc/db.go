@@ -1,14 +1,16 @@
 package ioc
 
 import (
+	"time"
+
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	glogger "gorm.io/gorm/logger"
 	"gorm.io/plugin/opentelemetry/tracing"
 	"gorm.io/plugin/prometheus"
 
 	"geektime-basic-go/webook/interactive/repository/dao"
-	intrdao "geektime-basic-go/webook/interactive/repository/dao"
 	prometheus2 "geektime-basic-go/webook/pkg/gormx/callbacks/prometheus"
 	"geektime-basic-go/webook/pkg/logger"
 )
@@ -17,16 +19,16 @@ func InitDB(l logger.Logger) *gorm.DB {
 	cfg := struct {
 		DSN string `yaml:"dsn"`
 	}{}
-	if err := viper.UnmarshalKey("db.mysql", &cfg); err != nil {
+	if err := viper.UnmarshalKey("db.mysql.intr", &cfg); err != nil {
 		panic(err)
 	}
 	db, err := gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{
-		// 慢查询日志
-		//Logger: glogger.New(gormLoggerFunc(l.Info), glogger.Config{
-		//	SlowThreshold:        100 * time.Millisecond,
-		//	LogLevel:             glogger.Error,
-		//	ParameterizedQueries: true,
-		//}),
+		//慢查询日志
+		Logger: glogger.New(gormLoggerFunc(l.Warn), glogger.Config{
+			SlowThreshold:        50 * time.Millisecond,
+			LogLevel:             glogger.Warn,
+			ParameterizedQueries: true,
+		}),
 	})
 	if err != nil {
 		panic(err)
@@ -60,9 +62,6 @@ func InitDB(l logger.Logger) *gorm.DB {
 	}
 
 	if err = dao.InitTables(db); err != nil {
-		panic(err)
-	}
-	if err = intrdao.InitTables(db); err != nil {
 		panic(err)
 	}
 

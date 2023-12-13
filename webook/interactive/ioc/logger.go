@@ -24,7 +24,7 @@ func InitZapLogger() logger.Logger {
 	zcfg := zap.NewDevelopmentConfig()
 	zcfg.Level = logger.ToZapLevel(cfg.Level)
 	zcfg.Encoding = cfg.Encoding
-	l, err := zcfg.Build()
+	l, err := zcfg.Build(zap.AddCallerSkip(1))
 	if err != nil {
 		panic(err)
 	}

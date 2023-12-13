@@ -1,9 +1,13 @@
 package ioc
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	glogger "gorm.io/gorm/logger"
 	"gorm.io/plugin/opentelemetry/tracing"
 	"gorm.io/plugin/prometheus"
 
@@ -22,11 +26,11 @@ func InitDB(l logger.Logger) *gorm.DB {
 	}
 	db, err := gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{
 		// 慢查询日志
-		//Logger: glogger.New(gormLoggerFunc(l.Info), glogger.Config{
-		//	SlowThreshold:        100 * time.Millisecond,
-		//	LogLevel:             glogger.Error,
-		//	ParameterizedQueries: true,
-		//}),
+		Logger: glogger.New(gormLoggerFunc(l.Warn), glogger.Config{
+			SlowThreshold:        50 * time.Millisecond,
+			LogLevel:             glogger.Warn,
+			ParameterizedQueries: true,
+		}),
 	})
 	if err != nil {
 		panic(err)
@@ -72,5 +76,5 @@ func InitDB(l logger.Logger) *gorm.DB {
 type gormLoggerFunc func(msg string, fields ...any)
 
 func (g gormLoggerFunc) Printf(msg string, args ...any) {
-	g(msg, logger.Field{Key: "args", Value: args})
+	g("GORM LOG", logger.String("args", fmt.Sprintf(msg, args...)))
 }
