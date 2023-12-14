@@ -9,11 +9,11 @@ import (
 	"go.uber.org/mock/gomock"
 	"gorm.io/gorm"
 
-	"geektime-basic-go/webook/migrator"
-	"geektime-basic-go/webook/migrator/events"
-	evtmocks "geektime-basic-go/webook/migrator/events/mocks"
-	"geektime-basic-go/webook/migrator/integration/startup"
-	gorm2 "geektime-basic-go/webook/migrator/validator/gorm"
+	"geektime-basic-go/webook/pkg/migrator"
+	"geektime-basic-go/webook/pkg/migrator/events"
+	evtmocks "geektime-basic-go/webook/pkg/migrator/events/mocks"
+	"geektime-basic-go/webook/pkg/migrator/integration/startup"
+	"geektime-basic-go/webook/pkg/migrator/validator"
 )
 
 type InteractiveTestSuite struct {
@@ -110,7 +110,7 @@ func (i *InteractiveTestSuite) TestValidator() {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			tc.before(t)
-			v := gorm2.NewValidator[Interactives](i.srcDB, i.intrDB, "src", l, tc.mock(ctrl))
+			v := validator.NewValidator[Interactives](i.srcDB, i.intrDB, "src", l, tc.mock(ctrl))
 			require.Equal(t, tc.wantErr, v.Validate(context.Background()))
 			tc.after(t)
 		})
