@@ -11,7 +11,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"geektime-basic-go/webook/internal/repository/cache"
-	"geektime-basic-go/webook/internal/repository/cache/redis/mocks"
+	svcmocks "geektime-basic-go/webook/internal/repository/cache/redis/mocks"
 )
 
 func TestCodeCache_Set(t *testing.T) {
@@ -30,7 +30,7 @@ func TestCodeCache_Set(t *testing.T) {
 		{
 			name: "设置成功",
 			mock: func(ctrl *gomock.Controller) redis.Cmdable {
-				cmd := mocks.NewMockCmdable(ctrl)
+				cmd := svcmocks.NewMockCmdable(ctrl)
 				mockRedis := redis.NewCmdResult(int64(0), nil)
 				cmd.EXPECT().Eval(gomock.Any(), luaSetCode, []string{"phone_code:login:13888888888"}, "123456").Return(mockRedis)
 				return cmd
@@ -42,7 +42,7 @@ func TestCodeCache_Set(t *testing.T) {
 		{
 			name: "发送太频繁",
 			mock: func(ctrl *gomock.Controller) redis.Cmdable {
-				cmd := mocks.NewMockCmdable(ctrl)
+				cmd := svcmocks.NewMockCmdable(ctrl)
 				mockRedis := redis.NewCmdResult(int64(-1), nil)
 				cmd.EXPECT().Eval(gomock.Any(), luaSetCode, []string{"phone_code:login:13888888888"}, "123456").Return(mockRedis)
 				return cmd
@@ -55,7 +55,7 @@ func TestCodeCache_Set(t *testing.T) {
 		{
 			name: "系统错误",
 			mock: func(ctrl *gomock.Controller) redis.Cmdable {
-				cmd := mocks.NewMockCmdable(ctrl)
+				cmd := svcmocks.NewMockCmdable(ctrl)
 				mockRedis := redis.NewCmdResult(int64(2), nil)
 				cmd.EXPECT().Eval(gomock.Any(), luaSetCode, []string{"phone_code:login:13888888888"}, "123456").Return(mockRedis)
 				return cmd
@@ -68,7 +68,7 @@ func TestCodeCache_Set(t *testing.T) {
 		{
 			name: "设置失败",
 			mock: func(ctrl *gomock.Controller) redis.Cmdable {
-				cmd := mocks.NewMockCmdable(ctrl)
+				cmd := svcmocks.NewMockCmdable(ctrl)
 				mockRedis := redis.NewCmdResult(int64(0), errors.New("模拟设置失败"))
 				cmd.EXPECT().Eval(gomock.Any(), luaSetCode, []string{"phone_code:login:13888888888"}, "123456").Return(mockRedis)
 				return cmd
@@ -109,7 +109,7 @@ func TestCodeCache_Verify(t *testing.T) {
 		{
 			name: "验证通过",
 			mock: func(ctrl *gomock.Controller) redis.Cmdable {
-				cmd := mocks.NewMockCmdable(ctrl)
+				cmd := svcmocks.NewMockCmdable(ctrl)
 				mockRedis := redis.NewCmdResult(int64(0), nil)
 				cmd.EXPECT().Eval(gomock.Any(), luaVerifyCode, []string{"phone_code:login:13888888888"}, "123456").Return(mockRedis)
 				return cmd
@@ -122,7 +122,7 @@ func TestCodeCache_Verify(t *testing.T) {
 		{
 			name: "验证次数太多",
 			mock: func(ctrl *gomock.Controller) redis.Cmdable {
-				cmd := mocks.NewMockCmdable(ctrl)
+				cmd := svcmocks.NewMockCmdable(ctrl)
 				mockRedis := redis.NewCmdResult(int64(-1), nil)
 				cmd.EXPECT().Eval(gomock.Any(), luaVerifyCode, []string{"phone_code:login:13888888888"}, "123456").Return(mockRedis)
 				return cmd
@@ -135,7 +135,7 @@ func TestCodeCache_Verify(t *testing.T) {
 		{
 			name: "系统错误",
 			mock: func(ctrl *gomock.Controller) redis.Cmdable {
-				cmd := mocks.NewMockCmdable(ctrl)
+				cmd := svcmocks.NewMockCmdable(ctrl)
 				mockRedis := redis.NewCmdResult(int64(2), nil)
 				cmd.EXPECT().Eval(gomock.Any(), luaVerifyCode, []string{"phone_code:login:13888888888"}, "123456").Return(mockRedis)
 				return cmd
@@ -147,7 +147,7 @@ func TestCodeCache_Verify(t *testing.T) {
 		{
 			name: "校验失败",
 			mock: func(ctrl *gomock.Controller) redis.Cmdable {
-				cmd := mocks.NewMockCmdable(ctrl)
+				cmd := svcmocks.NewMockCmdable(ctrl)
 				mockRedis := redis.NewCmdResult(int64(0), errors.New("模拟校验失败"))
 				cmd.EXPECT().Eval(gomock.Any(), luaVerifyCode, []string{"phone_code:login:13888888888"}, "123456").Return(mockRedis)
 				return cmd

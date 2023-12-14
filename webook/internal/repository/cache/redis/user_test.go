@@ -14,7 +14,7 @@ import (
 
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/repository/cache"
-	"geektime-basic-go/webook/internal/repository/cache/redis/mocks"
+	svcmocks "geektime-basic-go/webook/internal/repository/cache/redis/mocks"
 )
 
 func TestUserCache_Delete(t *testing.T) {
@@ -27,7 +27,7 @@ func TestUserCache_Delete(t *testing.T) {
 		{
 			name: "删除成功",
 			mock: func(ctrl *gomock.Controller) redis.Cmdable {
-				cmd := mocks.NewMockCmdable(ctrl)
+				cmd := svcmocks.NewMockCmdable(ctrl)
 				res := redis.NewIntResult(1, nil)
 				cmd.EXPECT().Del(gomock.Any(), "user:info:1").Return(res)
 				return cmd
@@ -37,7 +37,7 @@ func TestUserCache_Delete(t *testing.T) {
 		{
 			name: "删除失败",
 			mock: func(ctrl *gomock.Controller) redis.Cmdable {
-				cmd := mocks.NewMockCmdable(ctrl)
+				cmd := svcmocks.NewMockCmdable(ctrl)
 				res := redis.NewIntResult(0, redis.Nil)
 				cmd.EXPECT().Del(gomock.Any(), "user:info:1").Return(res)
 				return cmd
@@ -69,7 +69,7 @@ func TestUserCache_Get(t *testing.T) {
 		{
 			name: "查到用户",
 			mock: func(ctrl *gomock.Controller) redis.Cmdable {
-				cmd := mocks.NewMockCmdable(ctrl)
+				cmd := svcmocks.NewMockCmdable(ctrl)
 				res := redis.NewStringResult(`{"id":1,"email":"123@qq.com","nickname":"泰裤辣","password":"$2a$10$s51GBcU20dkNUVTpUAQqpe6febjXkRYvhEwa5OkN5rU6rw2KTbNUi","phone":"13888888888","aboutMe":"泰裤辣"}`, nil)
 				cmd.EXPECT().Get(gomock.Any(), "user:info:1").Return(res)
 				return cmd
@@ -87,7 +87,7 @@ func TestUserCache_Get(t *testing.T) {
 		{
 			name: "用户不存在",
 			mock: func(ctrl *gomock.Controller) redis.Cmdable {
-				cmd := mocks.NewMockCmdable(ctrl)
+				cmd := svcmocks.NewMockCmdable(ctrl)
 				res := redis.NewStringResult("", redis.Nil)
 				cmd.EXPECT().Get(gomock.Any(), "user:info:1").Return(res)
 				return cmd
@@ -99,7 +99,7 @@ func TestUserCache_Get(t *testing.T) {
 		{
 			name: "查找用户失败",
 			mock: func(ctrl *gomock.Controller) redis.Cmdable {
-				cmd := mocks.NewMockCmdable(ctrl)
+				cmd := svcmocks.NewMockCmdable(ctrl)
 				res := redis.NewStringResult("", errors.New("模拟查找用户失败"))
 				cmd.EXPECT().Get(gomock.Any(), "user:info:1").Return(res)
 				return cmd
@@ -111,7 +111,7 @@ func TestUserCache_Get(t *testing.T) {
 		{
 			name: "反序列化失败",
 			mock: func(ctrl *gomock.Controller) redis.Cmdable {
-				cmd := mocks.NewMockCmdable(ctrl)
+				cmd := svcmocks.NewMockCmdable(ctrl)
 				res := redis.NewStringResult(`{"id":1,}`, nil)
 				cmd.EXPECT().Get(gomock.Any(), "user:info:1").Return(res)
 				return cmd
@@ -155,7 +155,7 @@ func TestUserCache_Set(t *testing.T) {
 		{
 			name: "设置成功",
 			mock: func(ctrl *gomock.Controller) redis.Cmdable {
-				cmd := mocks.NewMockCmdable(ctrl)
+				cmd := svcmocks.NewMockCmdable(ctrl)
 				res := redis.NewStatusResult("Ok", nil)
 				cmd.EXPECT().Set(gomock.Any(), "user:info:1", bs, 15*time.Minute).Return(res)
 				return cmd
@@ -166,7 +166,7 @@ func TestUserCache_Set(t *testing.T) {
 		{
 			name: "设置失败",
 			mock: func(ctrl *gomock.Controller) redis.Cmdable {
-				cmd := mocks.NewMockCmdable(ctrl)
+				cmd := svcmocks.NewMockCmdable(ctrl)
 				res := redis.NewStatusResult("", errors.New("模拟设置失败"))
 				cmd.EXPECT().Set(gomock.Any(), "user:info:1", bs, 15*time.Minute).Return(res)
 				return cmd
