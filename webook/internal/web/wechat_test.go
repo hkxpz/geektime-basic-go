@@ -18,7 +18,7 @@ import (
 
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/service"
-	"geektime-basic-go/webook/internal/service/mocks"
+	svcmocks "geektime-basic-go/webook/internal/service/mocks"
 	"geektime-basic-go/webook/internal/service/oauth2/wechat"
 	wechatmocks "geektime-basic-go/webook/internal/service/oauth2/wechat/mocks"
 	myjwt "geektime-basic-go/webook/internal/web/jwt"
@@ -102,7 +102,7 @@ func TestOAuth2WechatHandler_Callback(t *testing.T) {
 			name: "登陆成功",
 			mock: func(ctrl *gomock.Controller) (wechat.Service, service.UserService, myjwt.Handler) {
 				svc := wechatmocks.NewMockService(ctrl)
-				userSvc := mocks.NewMockUserService(ctrl)
+				userSvc := svcmocks.NewMockUserService(ctrl)
 				hdl := jwtmocks.NewMockHandler(ctrl)
 				svc.EXPECT().VerifyCode(gomock.Any(), ssid).Return(domainWechatInfo, nil)
 				userSvc.EXPECT().FindOrCreateByWechat(gomock.Any(), domainWechatInfo).Return(domainUser, nil)
@@ -123,7 +123,7 @@ func TestOAuth2WechatHandler_Callback(t *testing.T) {
 			},
 			addCookie: func(req *http.Request) {},
 			wantCode:  http.StatusOK,
-			wantRse:   InternalServerError(),
+			wantRse:   InternalServerError,
 		},
 		{
 			name: "非法cookie token",
@@ -134,7 +134,7 @@ func TestOAuth2WechatHandler_Callback(t *testing.T) {
 				req.AddCookie(newCookie(newToken(ssid, myjwt.AccessTokenKey)))
 			},
 			wantCode: http.StatusOK,
-			wantRse:  InternalServerError(),
+			wantRse:  InternalServerError,
 		},
 		{
 			name: "state被篡改",
@@ -145,7 +145,7 @@ func TestOAuth2WechatHandler_Callback(t *testing.T) {
 				req.AddCookie(newCookie(newToken(uuid.New(), stateTokenKey)))
 			},
 			wantCode: http.StatusOK,
-			wantRse:  InternalServerError(),
+			wantRse:  InternalServerError,
 		},
 		{
 			name: "授权码验证失败",
@@ -158,13 +158,13 @@ func TestOAuth2WechatHandler_Callback(t *testing.T) {
 				req.AddCookie(newCookie(newToken(ssid, stateTokenKey)))
 			},
 			wantCode: http.StatusOK,
-			wantRse:  InternalServerError(),
+			wantRse:  InternalServerError,
 		},
 		{
 			name: "查找/创建用户失败",
 			mock: func(ctrl *gomock.Controller) (wechat.Service, service.UserService, myjwt.Handler) {
 				svc := wechatmocks.NewMockService(ctrl)
-				userSvc := mocks.NewMockUserService(ctrl)
+				userSvc := svcmocks.NewMockUserService(ctrl)
 				svc.EXPECT().VerifyCode(gomock.Any(), ssid).Return(domainWechatInfo, nil)
 				userSvc.EXPECT().FindOrCreateByWechat(gomock.Any(), domainWechatInfo).Return(domain.User{}, errFailed)
 				return svc, userSvc, nil
@@ -173,13 +173,13 @@ func TestOAuth2WechatHandler_Callback(t *testing.T) {
 				req.AddCookie(newCookie(newToken(ssid, stateTokenKey)))
 			},
 			wantCode: http.StatusOK,
-			wantRse:  InternalServerError(),
+			wantRse:  InternalServerError,
 		},
 		{
 			name: "设置token失败",
 			mock: func(ctrl *gomock.Controller) (wechat.Service, service.UserService, myjwt.Handler) {
 				svc := wechatmocks.NewMockService(ctrl)
-				userSvc := mocks.NewMockUserService(ctrl)
+				userSvc := svcmocks.NewMockUserService(ctrl)
 				hdl := jwtmocks.NewMockHandler(ctrl)
 				svc.EXPECT().VerifyCode(gomock.Any(), ssid).Return(domainWechatInfo, nil)
 				userSvc.EXPECT().FindOrCreateByWechat(gomock.Any(), domainWechatInfo).Return(domainUser, nil)
@@ -190,7 +190,7 @@ func TestOAuth2WechatHandler_Callback(t *testing.T) {
 				req.AddCookie(newCookie(newToken(ssid, stateTokenKey)))
 			},
 			wantCode: http.StatusOK,
-			wantRse:  InternalServerError(),
+			wantRse:  InternalServerError,
 		},
 	}
 

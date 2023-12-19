@@ -19,7 +19,7 @@ import (
 
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/service"
-	"geektime-basic-go/webook/internal/service/mocks"
+	svcmocks "geektime-basic-go/webook/internal/service/mocks"
 	myjwt "geektime-basic-go/webook/internal/web/jwt"
 	jwtmocks "geektime-basic-go/webook/internal/web/jwt/mocks"
 	"geektime-basic-go/webook/pkg/ginx/handlefunc"
@@ -56,7 +56,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 		{
 			name: "注册成功",
 			mock: func(ctl *gomock.Controller) service.UserService {
-				userSvc := mocks.NewMockUserService(ctl)
+				userSvc := svcmocks.NewMockUserService(ctl)
 				userSvc.EXPECT().Signup(gomock.Any(), domain.User{Email: "123@qq.com", Password: "hello@world123"}).Return(nil)
 				return userSvc
 			},
@@ -103,7 +103,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 		{
 			name: "邮箱冲突",
 			mock: func(ctl *gomock.Controller) service.UserService {
-				userSvc := mocks.NewMockUserService(ctl)
+				userSvc := svcmocks.NewMockUserService(ctl)
 				userSvc.EXPECT().Signup(gomock.Any(), domain.User{Email: "123@qq.com", Password: "hello@world123"}).Return(service.ErrUserDuplicate)
 				return userSvc
 			},
@@ -114,7 +114,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 		{
 			name: "系统异常",
 			mock: func(ctl *gomock.Controller) service.UserService {
-				userSvc := mocks.NewMockUserService(ctl)
+				userSvc := svcmocks.NewMockUserService(ctl)
 				userSvc.EXPECT().Signup(gomock.Any(), domain.User{Email: "123@qq.com", Password: "hello@world123"}).Return(errors.New("模拟系统异常"))
 				return userSvc
 			},
@@ -171,7 +171,7 @@ func TestUserHandler_Login(t *testing.T) {
 		{
 			name: "登录成功",
 			mock: func(ctrl *gomock.Controller) (service.UserService, myjwt.Handler) {
-				us := mocks.NewMockUserService(ctrl)
+				us := svcmocks.NewMockUserService(ctrl)
 				jh := jwtmocks.NewMockHandler(ctrl)
 				us.EXPECT().Login(gomock.Any(), "123@qq.com", "hello@world123").Return(userDomain, nil)
 				jh.EXPECT().SetLoginToken(gomock.Any(), int64(1))
@@ -186,7 +186,7 @@ func TestUserHandler_Login(t *testing.T) {
 		{
 			name: "登录成功,设置token失败",
 			mock: func(ctrl *gomock.Controller) (service.UserService, myjwt.Handler) {
-				us := mocks.NewMockUserService(ctrl)
+				us := svcmocks.NewMockUserService(ctrl)
 				jh := jwtmocks.NewMockHandler(ctrl)
 				us.EXPECT().Login(gomock.Any(), "123@qq.com", "hello@world123").Return(userDomain, nil)
 				jh.EXPECT().SetLoginToken(gomock.Any(), int64(1)).Return(errors.New("设置token失败"))
@@ -210,7 +210,7 @@ func TestUserHandler_Login(t *testing.T) {
 		{
 			name: "用户名或密码不正确",
 			mock: func(ctrl *gomock.Controller) (service.UserService, myjwt.Handler) {
-				us := mocks.NewMockUserService(ctrl)
+				us := svcmocks.NewMockUserService(ctrl)
 				us.EXPECT().Login(gomock.Any(), "123@qq.com", "hello@world123").Return(domain.User{}, service.ErrInvalidUserOrPassword)
 				return us, nil
 			},
@@ -222,7 +222,7 @@ func TestUserHandler_Login(t *testing.T) {
 		{
 			name: "系统错误",
 			mock: func(ctrl *gomock.Controller) (service.UserService, myjwt.Handler) {
-				us := mocks.NewMockUserService(ctrl)
+				us := svcmocks.NewMockUserService(ctrl)
 				us.EXPECT().Login(gomock.Any(), "123@qq.com", "hello@world123").Return(domain.User{}, errors.New("模拟系统错误"))
 				return us, nil
 			},
@@ -289,7 +289,7 @@ func TestUserHandler_Edit(t *testing.T) {
 		{
 			name: "修改成功",
 			mock: func(ctrl *gomock.Controller) service.UserService {
-				us := mocks.NewMockUserService(ctrl)
+				us := svcmocks.NewMockUserService(ctrl)
 				us.EXPECT().Edit(gomock.Any(), userDomain).Return(nil)
 				return us
 			},
@@ -341,7 +341,7 @@ func TestUserHandler_Edit(t *testing.T) {
 		{
 			name: "系统错误",
 			mock: func(ctrl *gomock.Controller) service.UserService {
-				us := mocks.NewMockUserService(ctrl)
+				us := svcmocks.NewMockUserService(ctrl)
 				us.EXPECT().Edit(gomock.Any(), userDomain).Return(errors.New("模拟系统错误"))
 				return us
 			},
@@ -404,7 +404,7 @@ func TestUserHandler_Profile(t *testing.T) {
 		{
 			name: "成功",
 			mock: func(ctrl *gomock.Controller) service.UserService {
-				us := mocks.NewMockUserService(ctrl)
+				us := svcmocks.NewMockUserService(ctrl)
 				us.EXPECT().Profile(gomock.Any(), int64(1)).Return(userDomain, nil)
 				return us
 			},
@@ -421,7 +421,7 @@ func TestUserHandler_Profile(t *testing.T) {
 		{
 			name: "失败",
 			mock: func(ctrl *gomock.Controller) service.UserService {
-				us := mocks.NewMockUserService(ctrl)
+				us := svcmocks.NewMockUserService(ctrl)
 				us.EXPECT().Profile(gomock.Any(), int64(1)).Return(domain.User{}, errors.New("模拟系统错误"))
 				return us
 			},
@@ -471,7 +471,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 		{
 			name: "发送成功",
 			mock: func(ctrl *gomock.Controller) service.CodeService {
-				cs := mocks.NewMockCodeService(ctrl)
+				cs := svcmocks.NewMockCodeService(ctrl)
 				cs.EXPECT().Send(gomock.Any(), biz, "13888888888").Return(nil)
 				return cs
 			},
@@ -500,7 +500,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 		{
 			name: "短信发送太频繁",
 			mock: func(ctrl *gomock.Controller) service.CodeService {
-				cs := mocks.NewMockCodeService(ctrl)
+				cs := svcmocks.NewMockCodeService(ctrl)
 				cs.EXPECT().Send(gomock.Any(), biz, "13888888888").Return(service.ErrCodeSendTooMany)
 				return cs
 			},
@@ -511,7 +511,7 @@ func TestUserHandler_SendSMSLoginCode(t *testing.T) {
 		{
 			name: "系统错误",
 			mock: func(ctrl *gomock.Controller) service.CodeService {
-				cs := mocks.NewMockCodeService(ctrl)
+				cs := svcmocks.NewMockCodeService(ctrl)
 				cs.EXPECT().Send(gomock.Any(), biz, "13888888888").Return(errors.New("模拟系统错误"))
 				return cs
 			},
@@ -569,8 +569,8 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 		{
 			name: "登录成功",
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService, myjwt.Handler) {
-				us := mocks.NewMockUserService(ctrl)
-				cs := mocks.NewMockCodeService(ctrl)
+				us := svcmocks.NewMockUserService(ctrl)
+				cs := svcmocks.NewMockCodeService(ctrl)
 				jh := jwtmocks.NewMockHandler(ctrl)
 				cs.EXPECT().Verify(gomock.Any(), biz, "13888888888", "123456").Return(true, nil)
 				us.EXPECT().FindOrCreate(gomock.Any(), "13888888888").Return(userDomain, nil)
@@ -584,8 +584,8 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 		{
 			name: "登录成功,设置token失败",
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService, myjwt.Handler) {
-				us := mocks.NewMockUserService(ctrl)
-				cs := mocks.NewMockCodeService(ctrl)
+				us := svcmocks.NewMockUserService(ctrl)
+				cs := svcmocks.NewMockCodeService(ctrl)
 				jh := jwtmocks.NewMockHandler(ctrl)
 				cs.EXPECT().Verify(gomock.Any(), biz, "13888888888", "123456").Return(true, nil)
 				us.EXPECT().FindOrCreate(gomock.Any(), "13888888888").Return(userDomain, nil)
@@ -599,7 +599,7 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 		{
 			name: "验证码校验失败",
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService, myjwt.Handler) {
-				cs := mocks.NewMockCodeService(ctrl)
+				cs := svcmocks.NewMockCodeService(ctrl)
 				cs.EXPECT().Verify(gomock.Any(), biz, "13888888888", "123456").Return(false, errors.New("模拟校验失败"))
 				return nil, cs, nil
 			},
@@ -610,7 +610,7 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 		{
 			name: "验证码错误",
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService, myjwt.Handler) {
-				cs := mocks.NewMockCodeService(ctrl)
+				cs := svcmocks.NewMockCodeService(ctrl)
 				cs.EXPECT().Verify(gomock.Any(), biz, "13888888888", "123456").Return(false, nil)
 				return nil, cs, nil
 			},
@@ -621,8 +621,8 @@ func TestUserHandler_LoginSMS(t *testing.T) {
 		{
 			name: "查找用户失败",
 			mock: func(ctrl *gomock.Controller) (service.UserService, service.CodeService, myjwt.Handler) {
-				us := mocks.NewMockUserService(ctrl)
-				cs := mocks.NewMockCodeService(ctrl)
+				us := svcmocks.NewMockUserService(ctrl)
+				cs := svcmocks.NewMockCodeService(ctrl)
 				cs.EXPECT().Verify(gomock.Any(), biz, "13888888888", "123456").Return(true, nil)
 				us.EXPECT().FindOrCreate(gomock.Any(), "13888888888").Return(domain.User{}, errors.New("模拟查找用户失败"))
 				return us, cs, nil

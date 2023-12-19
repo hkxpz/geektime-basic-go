@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"geektime-basic-go/webook/pkg/migrator"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -40,6 +42,17 @@ type Interactive struct {
 	LikeCnt    int64
 	CreateAt   int64
 	UpdateAt   int64
+}
+
+func (i Interactive) Id() int64 {
+	return i.ID
+}
+
+func (i Interactive) CompareTo(dst migrator.Entity) bool {
+	if di, ok := dst.(Interactive); ok {
+		return di == i
+	}
+	return false
 }
 
 // UserLikeBiz 命名无能，用户点赞的某个东西

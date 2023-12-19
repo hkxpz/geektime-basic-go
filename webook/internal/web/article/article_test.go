@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,7 +17,7 @@ import (
 
 	"geektime-basic-go/webook/internal/domain"
 	"geektime-basic-go/webook/internal/service"
-	"geektime-basic-go/webook/internal/service/mocks"
+	svcmocks "geektime-basic-go/webook/internal/service/mocks"
 	myjwt "geektime-basic-go/webook/internal/web/jwt"
 	hf "geektime-basic-go/webook/pkg/ginx/handlefunc"
 	"geektime-basic-go/webook/pkg/logger"
@@ -34,7 +35,7 @@ func TestArticleHandler_Edit(t *testing.T) {
 		{
 			name: "新建帖子",
 			mock: func(ctrl *gomock.Controller) service.ArticleService {
-				svc := mocks.NewMockArticleService(ctrl)
+				svc := svcmocks.NewMockArticleService(ctrl)
 				svc.EXPECT().Save(gomock.Any(), domain.Article{
 					Title:   "我的标题",
 					Content: "我的内容",
@@ -49,7 +50,7 @@ func TestArticleHandler_Edit(t *testing.T) {
 		{
 			name: "更新文章",
 			mock: func(ctrl *gomock.Controller) service.ArticleService {
-				svc := mocks.NewMockArticleService(ctrl)
+				svc := svcmocks.NewMockArticleService(ctrl)
 				svc.EXPECT().Save(gomock.Any(), domain.Article{
 					ID:      1,
 					Title:   "我的标题",
@@ -65,7 +66,7 @@ func TestArticleHandler_Edit(t *testing.T) {
 		{
 			name: "更新别人文章",
 			mock: func(ctrl *gomock.Controller) service.ArticleService {
-				svc := mocks.NewMockArticleService(ctrl)
+				svc := svcmocks.NewMockArticleService(ctrl)
 				svc.EXPECT().Save(gomock.Any(), domain.Article{
 					ID:      1,
 					Title:   "我的标题",
@@ -130,7 +131,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 		{
 			name: "新建立刻发表成功",
 			mock: func(ctrl *gomock.Controller) service.ArticleService {
-				svc := mocks.NewMockArticleService(ctrl)
+				svc := svcmocks.NewMockArticleService(ctrl)
 				svc.EXPECT().Publish(gomock.Any(), domain.Article{
 					Title:   "我的标题",
 					Content: "我的内容",
@@ -145,7 +146,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 		{
 			name: "已有帖子发表成功",
 			mock: func(ctrl *gomock.Controller) service.ArticleService {
-				svc := mocks.NewMockArticleService(ctrl)
+				svc := svcmocks.NewMockArticleService(ctrl)
 				svc.EXPECT().Publish(gomock.Any(), domain.Article{
 					ID:      1,
 					Title:   "我的标题",
@@ -161,7 +162,7 @@ func TestArticleHandler_Publish(t *testing.T) {
 		{
 			name: "发表失败",
 			mock: func(ctrl *gomock.Controller) service.ArticleService {
-				svc := mocks.NewMockArticleService(ctrl)
+				svc := svcmocks.NewMockArticleService(ctrl)
 				svc.EXPECT().Publish(gomock.Any(), domain.Article{
 					Title:   "我的标题",
 					Content: "我的内容",
@@ -210,4 +211,18 @@ func TestArticleHandler_Publish(t *testing.T) {
 			assert.Equal(t, tc.wantRes, webRes)
 		})
 	}
+}
+
+func reqBuilder(t *testing.T, method, url string, body io.Reader, headers ...[]string) *http.Request {
+	req, err := http.NewRequest(method, url, body)
+	require.NoError(t, err)
+
+	for _, header := range headers {
+		req.Header.Set(header[0], header[1])
+	}
+
+	if len(headers) < 1 {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	return req
 }

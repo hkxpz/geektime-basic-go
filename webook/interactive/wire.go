@@ -29,10 +29,19 @@ var eventsProvider = wire.NewSet(
 )
 
 var thirdProvider = wire.NewSet(
-	ioc.InitRedis, ioc.InitDB,
+	ioc.InitRedis,
+	ioc.InitSRC,
+	ioc.InitDST,
+	ioc.InitDoubleWritePool,
+	ioc.InitBizDB,
 	ioc.InitZapLogger,
 	ioc.InitKafka,
-	ioc.InitRLockClient,
+)
+
+var migratorProvider = wire.NewSet(
+	ioc.InitMigratorWeb,
+	ioc.InitFixDataConsumer,
+	ioc.InitMigratorProducer,
 )
 
 func Init() *App {
@@ -40,8 +49,9 @@ func Init() *App {
 		thirdProvider,
 		eventsProvider,
 		interactiveSvcProvider,
-		grpc.NewInteractiveServiceServer,
+		migratorProvider,
 
+		grpc.NewInteractiveServiceServer,
 		ioc.InitGRPCxServer,
 		ioc.NewConsumers,
 		wire.Struct(new(App), "*"),

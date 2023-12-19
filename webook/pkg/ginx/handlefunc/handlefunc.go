@@ -67,6 +67,16 @@ func WrapReq[Req any](fn func(*gin.Context, Req) (Response, error)) gin.HandlerF
 	}
 }
 
+func Wrap(fn func(*gin.Context) (Response, error)) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		res, err := fn(ctx)
+		if err != nil {
+			log.Error("执行业务逻辑失败", logger.String("path", ctx.Request.URL.Path), logger.Error(err))
+		}
+		ctx.JSON(http.StatusOK, res)
+	}
+}
+
 func WrapClaims(fn func(*gin.Context, UserClaims) (Response, error)) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		rawVal, ok := ctx.Get("user")

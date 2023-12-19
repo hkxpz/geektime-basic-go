@@ -33,11 +33,11 @@ func (f *OverrideFixer[T]) Fix(event events.InconsistentEvent) error {
 	var src T
 	err := f.base.Where("id = ?", event.ID).First(&src).Error
 	switch {
-	default:
-		return err
 	case errors.Is(err, gorm.ErrRecordNotFound):
 		return f.target.Delete("id = ?", event.ID).Error
 	case err == nil:
 		return f.target.Clauses(&clause.OnConflict{DoUpdates: clause.AssignmentColumns(f.columns)}).Create(&src).Error
+	default:
+		return err
 	}
 }

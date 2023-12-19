@@ -14,7 +14,7 @@ import (
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	ioc.InitViperWatch()
-	initPrometheus()
+	//initPrometheus()
 	cancel := ioc.InitOTEL()
 	defer cancel(context.Background())
 

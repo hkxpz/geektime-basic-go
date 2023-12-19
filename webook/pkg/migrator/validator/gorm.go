@@ -68,7 +68,7 @@ func (g *GORMValidator[T]) baseToTarget(ctx context.Context) error {
 	for {
 		var src T
 		dbCtx, cancel := context.WithTimeout(ctx, time.Second)
-		err := g.base.WithContext(dbCtx).Order("id").Offset(offset).First(&src).Error
+		err := g.base.WithContext(dbCtx).Where("update_at > ?", g.updateAt).Order("id").Offset(offset).First(&src).Error
 		cancel()
 		switch {
 		case err == nil:
@@ -93,13 +93,13 @@ func (g *GORMValidator[T]) dstDiff(ctx context.Context, src T) {
 	dbCtx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
-	err := g.target.WithContext(dbCtx).Where("id = ?", src.ID()).First(&dst).Error
+	err := g.target.WithContext(dbCtx).Where("id = ?", src.Id()).First(&dst).Error
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):
-		g.notify(src.ID(), events.InconsistentEventTypeTargetMissing)
+		g.notify(src.Id(), events.InconsistentEventTypeTargetMissing)
 	case err == nil:
 		if equal := src.CompareTo(dst); !equal {
-			g.notify(src.ID(), events.InconsistentEventTypeNotEqual)
+			g.notify(src.Id(), events.InconsistentEventTypeNotEqual)
 		}
 	default:
 		g.l.Error("src to dst 查询目标表失败", logger.Error(err))
@@ -111,17 +111,17 @@ func (g *GORMValidator[T]) dstDiff(ctx context.Context, src T) {
 func (g *GORMValidator[T]) targetToBase(ctx context.Context) error {
 	var offset int
 	for {
-		var ts []T
+		ts := make([]T, 0, g.batchSize)
 		dbCtx, cancel := context.WithTimeout(ctx, time.Second)
 		err := g.target.WithContext(dbCtx).Model(new(T)).Select("id").Offset(offset).Limit(g.batchSize).Find(&ts).Error
 		cancel()
 
 		switch {
-		case err == nil:
+		case err == nil && len(ts) > 1:
 			g.srcMissingRecords(ctx, ts)
 		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
 			return nil
-		case errors.Is(err, gorm.ErrRecordNotFound):
+		case len(ts) < 1, errors.Is(err, gorm.ErrRecordNotFound):
 			if g.sleepInterval < 1 {
 				return nil
 			}
@@ -130,27 +130,23 @@ func (g *GORMValidator[T]) targetToBase(ctx context.Context) error {
 		default:
 			g.l.Error("dst to src 查询目标表失败", logger.Error(err))
 		}
-		if len(ts) < g.batchSize {
-			// 数据没了
-			return nil
-		}
 		offset += g.batchSize
 	}
 }
 
 func (g *GORMValidator[T]) srcMissingRecords(ctx context.Context, ts []T) {
-	ids := slice.Map(ts, func(idx int, src T) int64 { return src.ID() })
+	ids := slice.Map(ts, func(idx int, src T) int64 { return src.Id() })
 	dbCtx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
 	var srcTs []T
 	err := g.base.WithContext(dbCtx).Select("id").Where("id IN ?", ids).Find(&srcTs).Error
 	switch {
-	case errors.Is(err, gorm.ErrRecordNotFound):
-		// 说明 ID 全没有
+	case len(srcTs) < 1, errors.Is(err, gorm.ErrRecordNotFound):
+		// 说明 Id 全没有
 		g.notifySrcMissing(ts)
 	case err == nil:
-		missing := slice.DiffSetFunc(ts, srcTs, func(src, dst T) bool { return src.ID() == dst.ID() })
+		missing := slice.DiffSetFunc(ts, srcTs, func(src, dst T) bool { return src.Id() == dst.Id() })
 		g.notifySrcMissing(missing)
 	default:
 		g.l.Error("dst to src 查询源表失败", logger.Error(err))
@@ -168,6 +164,6 @@ func (g *GORMValidator[T]) notify(id int64, typ string) {
 
 func (g *GORMValidator[T]) notifySrcMissing(ts []T) {
 	for _, t := range ts {
-		g.notify(t.ID(), events.InconsistentEventTypeBaseMissing)
+		g.notify(t.Id(), events.InconsistentEventTypeBaseMissing)
 	}
 }

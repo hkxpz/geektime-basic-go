@@ -1,6 +1,8 @@
 package ioc
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -12,14 +14,41 @@ import (
 
 	"geektime-basic-go/webook/interactive/repository/dao"
 	prometheus2 "geektime-basic-go/webook/pkg/gormx/callbacks/prometheus"
+	"geektime-basic-go/webook/pkg/gormx/connpool"
 	"geektime-basic-go/webook/pkg/logger"
 )
 
-func InitDB(l logger.Logger) *gorm.DB {
+// SrcDB 纯粹是为了 wire 而准备的
+type SrcDB *gorm.DB
+
+// DstDB 纯粹是为了 wire 而准备的
+type DstDB *gorm.DB
+
+func InitSRC(l logger.Logger) SrcDB {
+	return initDB("db.mysql", l)
+}
+
+func InitDST(l logger.Logger) DstDB {
+	return initDB("db.mysql.intr", l)
+}
+
+func InitDoubleWritePool(src SrcDB, dst DstDB, l logger.Logger) *connpool.DoubleWritePool {
+	return connpool.NewDoubleWritePool(src, dst, l)
+}
+
+func InitBizDB(pool *connpool.DoubleWritePool) *gorm.DB {
+	db, err := gorm.Open(mysql.New(mysql.Config{Conn: pool}))
+	if err != nil {
+		panic(err)
+	}
+	return db
+}
+
+func initDB(key string, l logger.Logger) *gorm.DB {
 	cfg := struct {
 		DSN string `yaml:"dsn"`
 	}{}
-	if err := viper.UnmarshalKey("db.mysql.intr", &cfg); err != nil {
+	if err := viper.UnmarshalKey(key, &cfg); err != nil {
 		panic(err)
 	}
 	db, err := gorm.Open(mysql.Open(cfg.DSN), &gorm.Config{
@@ -53,7 +82,7 @@ func InitDB(l logger.Logger) *gorm.DB {
 	err = (&prometheus2.Callbacks{
 		NameSpace:  "hkxpz",
 		Subsystem:  "webook",
-		Name:       "gorm",
+		Name:       "gorm_" + strings.ReplaceAll(key, ".", "_"),
 		InstanceID: "instance-1",
 		Help:       "gorm DB 查询",
 	}).Register(db)
@@ -71,5 +100,5 @@ func InitDB(l logger.Logger) *gorm.DB {
 type gormLoggerFunc func(msg string, fields ...any)
 
 func (g gormLoggerFunc) Printf(msg string, args ...any) {
-	g(msg, logger.Field{Key: "args", Value: args})
+	g("GORM LOG", logger.String("args", fmt.Sprintf(msg, args...)))
 }
