@@ -5,6 +5,8 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/naming/resolver"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -14,11 +16,23 @@ import (
 	"geektime-basic-go/webook/pkg/logger"
 )
 
-func InitInteractiveGRPC() intr.InteractiveServiceClient {
+func InitEtcd() *clientv3.Client {
+	var cfg clientv3.Config
+	err := viper.UnmarshalKey("etcd", &cfg)
+	if err != nil {
+		panic(fmt.Sprintf("初始化 etcd client 反序列化配置失败: %s", err))
+	}
+	cli, err := clientv3.New(cfg)
+	if err != nil {
+		panic(fmt.Sprintf("初始化 etcd client 失败: %s", err))
+	}
+	return cli
+}
+
+func InitInteractiveGRPC(client *clientv3.Client) intr.InteractiveServiceClient {
 	type Config struct {
-		Addr      string
-		Secure    bool
-		Threshold int32
+		Secure bool   `json:"secure"`
+		Name   string `json:"name"`
 	}
 
 	var cfg Config
@@ -27,15 +41,24 @@ func InitInteractiveGRPC() intr.InteractiveServiceClient {
 	}
 	var opts []grpc.DialOption
 	if !cfg.Secure {
-		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		opts = append(opts)
 	}
-	cc, err := grpc.Dial(cfg.Addr, opts...)
+
+	bd, err := resolver.NewBuilder(client)
+	if err != nil {
+		panic(fmt.Sprintf("初始化 grpc resolver 失败: %s", err))
+	}
+
+	cc, err := grpc.Dial(
+		"etcd:///service/"+cfg.Name,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithResolvers(bd),
+	)
 	if err != nil {
 		panic(fmt.Sprintf("初始化 grpc client 失败, 连接失败: %s", err))
 	}
 
-	remote := intr.NewInteractiveServiceClient(cc)
-	return intrRPC.NewGRPCInteractiveRPC(remote)
+	return intr.NewInteractiveServiceClient(cc)
 }
 
 func InitInteractiveRPC(svc service.InteractiveService, l logger.Logger) intr.InteractiveServiceClient {

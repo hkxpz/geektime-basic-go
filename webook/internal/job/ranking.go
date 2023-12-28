@@ -130,7 +130,7 @@ func (r *RankingJob) Run() error {
 //}
 
 func (r *RankingJob) run() error {
-	r.l.Info("当前工作节点", logger.String("current_node", r.nodeName))
+	r.l.Debug("当前工作节点", logger.String("current_node", r.nodeName))
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 	return r.svc.RankTopN(ctx)
@@ -145,13 +145,13 @@ func (r *RankingJob) uploadStatus() {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout/2)
 	defer cancel()
 	status := r.currentStatus()
-	r.l.Info("上报负载", logger.String("current_node", r.nodeName), logger.Int("负载", status))
+	r.l.Debug("上报负载", logger.String("current_node", r.nodeName), logger.Int("负载", status))
 	res, err := r.cmd.Eval(ctx, luaUploadStatus, []string{"ranking:node"}, status, 5*time.Second.Seconds()).Int()
 	if r.lock != nil && res == 0 {
 		select {
 		default:
 		case r.changeNode <- struct{}{}:
-			r.l.Info("下一次调度更换节点", logger.String("current_node", r.nodeName), logger.Int("负载", status))
+			r.l.Debug("下一次调度更换节点", logger.String("current_node", r.nodeName), logger.Int("负载", status))
 		}
 	}
 	if err != nil {
