@@ -3,6 +3,7 @@ package ioc
 import (
 	"fmt"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
@@ -24,11 +25,22 @@ func InitZapLogger() logger.Logger {
 	zcfg := zap.NewDevelopmentConfig()
 	zcfg.Level = logger.ToZapLevel(cfg.Level)
 	zcfg.Encoding = cfg.Encoding
-	l, err := zcfg.Build(zap.AddCallerSkip(1))
+	zapLogger, err := zcfg.Build(zap.AddCallerSkip(1))
 	if err != nil {
 		panic(err)
 	}
-	return logger.NewZapLogger(l)
+
+	l := logger.NewZapLogger(zapLogger, zcfg.Level)
+	viper.OnConfigChange(func(in fsnotify.Event) {
+		level := viper.GetString("log.level")
+		if level == "" {
+			zapLogger.Error("重新加载日志级别失败")
+			return
+		}
+		l.SetLogLevel(level)
+	})
+
+	return l
 }
 
 func InitGlobalsLogger() {

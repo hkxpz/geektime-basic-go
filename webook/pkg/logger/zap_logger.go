@@ -7,11 +7,12 @@ import (
 )
 
 type ZapLogger struct {
-	logger *zap.Logger
+	logger      *zap.Logger
+	atomicLevel zap.AtomicLevel
 }
 
-func NewZapLogger(logger *zap.Logger) *ZapLogger {
-	return &ZapLogger{logger: logger}
+func NewZapLogger(logger *zap.Logger, atomicLevel zap.AtomicLevel) *ZapLogger {
+	return &ZapLogger{logger: logger, atomicLevel: atomicLevel}
 }
 
 func (z *ZapLogger) Debug(msg string, args ...any) {
@@ -46,6 +47,10 @@ func (z *ZapLogger) toArgs(args []any) []zap.Field {
 	}
 
 	return res
+}
+
+func (z *ZapLogger) SetLogLevel(level string) {
+	z.atomicLevel.SetLevel(ToZapLevel(level).Level())
 }
 
 func ToZapLevel(level string) zap.AtomicLevel {

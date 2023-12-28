@@ -1,9 +1,6 @@
 package ioc
 
 import (
-	"log"
-
-	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -20,9 +17,6 @@ func InitViper() {
 func InitViperWithWatchConfig() {
 	InitViper()
 	viper.WatchConfig()
-	viper.OnConfigChange(func(in fsnotify.Event) {
-		log.Println(in.Op)
-	})
 }
 
 func InitViperRemote() {

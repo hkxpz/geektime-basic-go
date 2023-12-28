@@ -13,12 +13,11 @@ import (
 )
 
 func main() {
-	ioc.InitViper()
+	ioc.InitViperWithWatchConfig()
 	initPrometheus()
 	app := Init()
 	for _, c := range app.consumers {
-		err := c.Start()
-		if err != nil {
+		if err := c.Start(); err != nil {
 			panic(err)
 		}
 	}
