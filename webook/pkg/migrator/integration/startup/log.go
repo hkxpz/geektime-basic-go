@@ -1,9 +1,10 @@
 package startup
 
 import (
-	"geektime-basic-go/webook/pkg/logger"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+
+	"geektime-basic-go/webook/pkg/logger"
 )
 
 func InitLog() logger.Logger {
@@ -29,5 +30,5 @@ func InitZapLogger() logger.Logger {
 	if err != nil {
 		panic(err)
 	}
-	return logger.NewZapLogger(l)
+	return logger.NewZapLogger(l, zcfg.Level)
 }

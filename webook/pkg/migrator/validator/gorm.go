@@ -39,24 +39,34 @@ func NewValidator[T migrator.Entity](base *gorm.DB, target *gorm.DB, direction s
 		direction:     direction,
 		l:             l,
 		producer:      producer,
-		batchSize:     100,
+		batchSize:     0,
 		sleepInterval: 0,
 	}
 }
 
-func (g *GORMValidator[T]) UpdateAt(updateAt int64) *GORMValidator[T] {
+func (g *GORMValidator[T]) SetUpdateAt(updateAt int64) *GORMValidator[T] {
 	g.updateAt = updateAt
 	return g
 }
 
-func (g *GORMValidator[T]) SleepInterval(i time.Duration) *GORMValidator[T] {
+func (g *GORMValidator[T]) SetSleepInterval(i time.Duration) *GORMValidator[T] {
 	g.sleepInterval = i
+	return g
+}
+
+func (g *GORMValidator[T]) SetBatchSize(size int) *GORMValidator[T] {
+	g.batchSize = size
 	return g
 }
 
 func (g *GORMValidator[T]) Validate(ctx context.Context) error {
 	var wg errgroup.Group
-	wg.Go(func() error { return g.baseToTarget(ctx) })
+	wg.Go(func() error {
+		if g.batchSize > 1 {
+			return g.baseToTargetBatch(ctx)
+		}
+		return g.baseToTarget(ctx)
+	})
 	wg.Go(func() error { return g.targetToBase(ctx) })
 	return wg.Wait()
 }
@@ -88,6 +98,33 @@ func (g *GORMValidator[T]) baseToTarget(ctx context.Context) error {
 	}
 }
 
+// baseToTarget 从 base 到 target 的验证
+// 找出 dst 中错误的数据
+func (g *GORMValidator[T]) baseToTargetBatch(ctx context.Context) error {
+	var offset int
+	for {
+		src := make([]T, 0, g.batchSize)
+		dbCtx, cancel := context.WithTimeout(ctx, time.Second)
+		err := g.base.WithContext(dbCtx).Where("update_at > ?", g.updateAt).Order("id").Offset(offset).Limit(g.batchSize).Find(&src).Error
+		cancel()
+		switch {
+		case len(src) < 1:
+			if g.sleepInterval < 1 {
+				return nil
+			}
+			time.Sleep(g.sleepInterval)
+			continue
+		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+			return nil
+		case err == nil:
+			g.dstDiffBatch(ctx, src)
+		default:
+			g.l.Error("src to dst 查询源表失败", logger.Error(err))
+		}
+		offset += g.batchSize
+	}
+}
+
 func (g *GORMValidator[T]) dstDiff(ctx context.Context, src T) {
 	var dst T
 	dbCtx, cancel := context.WithTimeout(ctx, time.Second)
@@ -106,14 +143,50 @@ func (g *GORMValidator[T]) dstDiff(ctx context.Context, src T) {
 	}
 }
 
+func (g *GORMValidator[T]) dstDiffBatch(ctx context.Context, src []T) {
+	if len(src) < 1 {
+		return
+	}
+	dst := make([]T, 0, g.batchSize)
+	ids := slice.Map(src, func(idx int, src T) int64 { return src.Id() })
+
+	dbCtx, cancel := context.WithTimeout(ctx, time.Second)
+	err := g.target.WithContext(dbCtx).Where("id in ?", ids).Find(&dst).Error
+	cancel()
+	if err != nil {
+		g.l.Error("src to dst 查询目标表失败", logger.Error(err))
+		return
+	}
+
+	dstMap := make(map[int64]T, len(dst))
+	for _, d := range dst {
+		dstMap[d.Id()] = d
+	}
+
+	for _, s := range src {
+		d, ok := dstMap[s.Id()]
+		if !ok {
+			g.notify(s.Id(), events.InconsistentEventTypeTargetMissing)
+			continue
+		}
+		if equal := s.CompareTo(d); !equal {
+			g.notify(s.Id(), events.InconsistentEventTypeNotEqual)
+		}
+	}
+}
+
 // targetToBase 从 target 到 base 的验证
 // 找出 dst 中多余的数据
 func (g *GORMValidator[T]) targetToBase(ctx context.Context) error {
+	batchSize := g.batchSize
+	if batchSize == 0 {
+		batchSize = 100
+	}
 	var offset int
 	for {
-		ts := make([]T, 0, g.batchSize)
+		ts := make([]T, 0, batchSize)
 		dbCtx, cancel := context.WithTimeout(ctx, time.Second)
-		err := g.target.WithContext(dbCtx).Model(new(T)).Select("id").Offset(offset).Limit(g.batchSize).Find(&ts).Error
+		err := g.target.WithContext(dbCtx).Model(new(T)).Select("id").Offset(offset).Limit(batchSize).Find(&ts).Error
 		cancel()
 
 		switch {
@@ -130,7 +203,7 @@ func (g *GORMValidator[T]) targetToBase(ctx context.Context) error {
 		default:
 			g.l.Error("dst to src 查询目标表失败", logger.Error(err))
 		}
-		offset += g.batchSize
+		offset += batchSize
 	}
 }
 
@@ -165,5 +238,11 @@ func (g *GORMValidator[T]) notify(id int64, typ string) {
 func (g *GORMValidator[T]) notifySrcMissing(ts []T) {
 	for _, t := range ts {
 		g.notify(t.Id(), events.InconsistentEventTypeBaseMissing)
+	}
+}
+
+func (g *GORMValidator[T]) notifyDstMissing(ts []T) {
+	for _, t := range ts {
+		g.notify(t.Id(), events.InconsistentEventTypeTargetMissing)
 	}
 }

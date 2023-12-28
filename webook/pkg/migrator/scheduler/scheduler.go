@@ -47,7 +47,7 @@ func (s *Scheduler[T]) RegisterRoutes(server *gin.RouterGroup) {
 	server.POST("/src_first", handlefunc.Wrap(s.SrcFirst))
 	server.POST("/dst_only", handlefunc.Wrap(s.DstOnly))
 	server.POST("/dst_first", handlefunc.Wrap(s.DstFirst))
-	server.POST("/full/start", handlefunc.Wrap(s.StartFullValidation))
+	server.POST("/full/start", handlefunc.WrapReq[BatchSizeRequest](s.StartFullValidation))
 	server.POST("/full/stop", handlefunc.Wrap(s.StopFullValidation))
 	server.POST("/incr/start", handlefunc.WrapReq[StartIncrRequest](s.StartIncrementValidation))
 	server.POST("/incr/stop", handlefunc.Wrap(s.StopIncrementValidation))
@@ -85,7 +85,7 @@ func (s *Scheduler[T]) DstFirst(c *gin.Context) (handlefunc.Response, error) {
 	return handlefunc.Response{Msg: "OK"}, nil
 }
 
-func (s *Scheduler[T]) StartFullValidation(c *gin.Context) (handlefunc.Response, error) {
+func (s *Scheduler[T]) StartFullValidation(c *gin.Context, req BatchSizeRequest) (handlefunc.Response, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	cancel := s.cancelFull
@@ -93,6 +93,7 @@ func (s *Scheduler[T]) StartFullValidation(c *gin.Context) (handlefunc.Response,
 	if err != nil {
 		return handlefunc.InternalServerError(), err
 	}
+	v.SetBatchSize(req.BatchSize)
 	var ctx context.Context
 	ctx, s.cancelFull = context.WithCancel(context.Background())
 	go func() {
@@ -120,7 +121,8 @@ func (s *Scheduler[T]) StartIncrementValidation(c *gin.Context, req StartIncrReq
 	if err != nil {
 		return handlefunc.InternalServerError(), err
 	}
-	v.SleepInterval(time.Duration(req.Interval) * time.Millisecond).UpdateAt(req.UpdateAt)
+	v.SetSleepInterval(time.Duration(req.Interval) * time.Millisecond).SetUpdateAt(req.UpdateAt)
+	v.SetBatchSize(req.BatchSize)
 	var ctx context.Context
 	ctx, s.cancelIncr = context.WithCancel(context.Background())
 	go func() {
@@ -152,7 +154,12 @@ func (s *Scheduler[T]) newValidator() (*validator.GORMValidator[T], error) {
 	}
 }
 
+type BatchSizeRequest struct {
+	BatchSize int `json:"batch_size"`
+}
+
 type StartIncrRequest struct {
-	UpdateAt int64 `json:"update_at"`
-	Interval int64 `json:"interval"`
+	UpdateAt  int64 `json:"update_at"`
+	Interval  int64 `json:"interval"`
+	BatchSize int   `json:"batch_size"`
 }
