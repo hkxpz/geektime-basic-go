@@ -30,5 +30,5 @@ func InitZapLogger() logger.Logger {
 	if err != nil {
 		panic(err)
 	}
-	return logger.NewZapLogger(l)
+	return logger.NewZapLogger(l, zcfg.Level)
 }
