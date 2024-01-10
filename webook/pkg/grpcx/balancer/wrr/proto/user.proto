@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+option go_package = "anything_demo/grpc/proto";
+
+service UserService{
+  rpc GetUser(GetUserRequest) returns (GetUserResponse) {}
+}
+
+message GetUserRequest{
+  string class = 1;
+  string userName = 2;
+  string userID = 3;
+}
+
+message GetUserResponse{
+  string class = 1;
+  string userID = 2;
+  string userName = 3;
+  string address = 4;
+  string sex = 5;
+  string phone = 6;
+}
+
+message UserDemo{
+  int64 id = 1;
+  string name = 2;
+
+  // 编号可以不连续
+  // 即便要删除字段, 也不要复用被删除字段的编号
+  string avatar = 4;
+  // bytes 切片
+  bytes passwd = 5;
+  double money = 6;
+  map<string, Address> addr = 7;
+  // 切片
+  repeated string nicknames = 8;
+  Gender Gender = 9;
+}
+
+enum Gender{
+  // 一定要从 0 开始
+  Unknown = 0;
+  Female = 1;
+  Male = 2;
+}
+
+message Address{
+
+}
