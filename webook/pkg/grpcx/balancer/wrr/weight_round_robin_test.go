@@ -6,6 +6,8 @@ import (
 	"net"
 	"testing"
 
+	"geektime-basic-go/webook/pkg/grpcx/proto"
+
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +20,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"geektime-basic-go/webook/internal/integration/startup"
-	pb "geektime-basic-go/webook/pkg/grpcx/balancer/wrr/proto"
 )
 
 const target = "service/user"
@@ -44,12 +45,12 @@ func TestServerRegistration(t *testing.T) {
 
 func (e *EtcdTestSuite) TestServer() {
 	addr := GetOutboundIP()
-	go e.startServer(":8090", &pb.FailoverServer{Code: codes.Unavailable, Addr: addr + ":8090"}, 50)
-	go e.startServer(":8092", &pb.User{Addr: addr + ":8092"}, 30)
-	e.startServer(":8091", &pb.User{Addr: addr + ":8091"}, 20)
+	go e.startServer(":8090", &proto.FailoverServer{Code: codes.Unavailable, Addr: addr + ":8090"}, 50)
+	go e.startServer(":8092", &proto.User{Addr: addr + ":8092"}, 30)
+	e.startServer(":8091", &proto.User{Addr: addr + ":8091"}, 20)
 }
 
-func (e *EtcdTestSuite) startServer(port string, svr pb.UserServiceServer, weight int) {
+func (e *EtcdTestSuite) startServer(port string, svr proto.UserServiceServer, weight int) {
 	em, err := endpoints.NewManager(e.client, target)
 	require.NoError(e.T(), err)
 
@@ -63,7 +64,7 @@ func (e *EtcdTestSuite) startServer(port string, svr pb.UserServiceServer, weigh
 	lis, err := net.Listen("tcp", port)
 	require.NoError(e.T(), err)
 
-	pb.RegisterUserServiceServer(server, svr)
+	proto.RegisterUserServiceServer(server, svr)
 	err = server.Serve(lis)
 	assert.NoError(e.T(), err)
 
@@ -86,10 +87,10 @@ func (e *EtcdTestSuite) TestClientWithGRPCRoundRobin() {
 	)
 	require.NoError(e.T(), err)
 	defer cc.Close()
-	uc := pb.NewUserServiceClient(cc)
+	uc := proto.NewUserServiceClient(cc)
 
 	for i := 0; i < 50; i++ {
-		resp, err1 := uc.GetUser(context.Background(), &pb.GetUserRequest{Class: "1", UserName: "小明", UserID: "1"})
+		resp, err1 := uc.GetUser(context.Background(), &proto.GetUserRequest{Class: "1", UserName: "小明", UserID: "1"})
 		if err1 != nil {
 			e.T().Log(err1)
 			continue

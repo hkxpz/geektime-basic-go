@@ -6,7 +6,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func InitLog() logger.Logger {
+func InitNoOpLogger() logger.Logger {
 	return logger.NewNoOpLogger()
 }
 
