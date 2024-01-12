@@ -15,6 +15,7 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.9.1
+	github.com/go-kratos/aegis v0.2.0
 	github.com/go-kratos/kratos/v2 v2.7.2
 	github.com/go-playground/assert/v2 v2.2.0
 	github.com/go-sql-driver/mysql v1.7.1

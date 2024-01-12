@@ -26,7 +26,7 @@ func NewInterceptorBuilder(tracer trace.Tracer, propagator propagation.TextMapPr
 	return &InterceptorBuilder{tracer: tracer, propagator: propagator, serviceName: serviceName, Builder: interceptors.NewBuilder()}
 }
 
-func (b *InterceptorBuilder) defaultUnaryServerInterceptor() grpc.UnaryServerInterceptor {
+func (b *InterceptorBuilder) Build() grpc.UnaryServerInterceptor {
 	tracer := b.tracer
 	if tracer == nil {
 		tracer = otel.GetTracerProvider().Tracer("geektime-basic-go/webook/pkg/grpcx")

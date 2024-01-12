@@ -23,7 +23,7 @@ func NewInterceptorBuilder(l logger.Logger) *InterceptorBuilder {
 	return &InterceptorBuilder{l: l, Builder: interceptors.NewBuilder()}
 }
 
-func (b *InterceptorBuilder) defaultUnaryServerInterceptor() grpc.UnaryServerInterceptor {
+func (b *InterceptorBuilder) Build() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		if info.FullMethod == "grpc.health.v1.Health/Check" {
 			return handler(ctx, req)

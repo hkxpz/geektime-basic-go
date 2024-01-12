@@ -40,7 +40,7 @@ func (o *OTELTestSuite) SetupSuite() {
 	o.client, err = etcdv3.New(etcdv3.Config{Endpoints: []string{addr}})
 	require.NoError(o.T(), err)
 
-	o.interceptor = NewInterceptorBuilder(nil, nil, "").defaultUnaryServerInterceptor()
+	o.interceptor = NewInterceptorBuilder(nil, nil, "").Build()
 }
 
 func TestServerRegistration(t *testing.T) {

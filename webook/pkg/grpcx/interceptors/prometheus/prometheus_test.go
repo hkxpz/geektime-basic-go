@@ -32,7 +32,7 @@ func (p *PrometheusTestSuite) SetupSuite() {
 		http.Handle("/metrics", promhttp.Handler())
 		fmt.Println(http.ListenAndServe(":8081", nil))
 	}()
-	p.interceptor = NewInterceptorBuilder("hkxpz", "webook").defaultUnaryServerInterceptor()
+	p.interceptor = NewInterceptorBuilder("hkxpz", "webook").Build()
 }
 
 func (p *PrometheusTestSuite) TestServer() {
