@@ -52,3 +52,11 @@ func (b *Builder) grpcHeaderValue(ctx context.Context, key string) string {
 	}
 	return strings.Join(md.Get(key), ";")
 }
+
+func (b *Builder) SplitMethodName(fullMethodName string) (string, string) {
+	fullMethodName = strings.TrimPrefix(fullMethodName, "/")
+	if idx := strings.Index(fullMethodName, "/"); idx > 0 {
+		return fullMethodName[:idx], fullMethodName[idx+1:]
+	}
+	return "unknown", "unknown"
+}
