@@ -21,11 +21,11 @@ func NewInterceptorBuilder(NameSpace, Subsystem string) *InterceptorBuilder {
 	return &InterceptorBuilder{NameSpace: NameSpace, Subsystem: Subsystem, Builder: interceptors.NewBuilder()}
 }
 
-func (i *InterceptorBuilder) defaultUnaryServerInterceptor() grpc.UnaryServerInterceptor {
+func (b *InterceptorBuilder) defaultUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	summary := prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
-			Namespace:  i.NameSpace,
-			Subsystem:  i.Subsystem,
+			Namespace:  b.NameSpace,
+			Subsystem:  b.Subsystem,
 			Name:       "server_handle_seconds",
 			Objectives: map[float64]float64{0.5: 0.01, 0.9: 0.01, 0.95: 0.01, 0.99: 0.001, 0.999: 0.0001}},
 		[]string{"type", "service", "method", "peer", "code"},
@@ -36,13 +36,13 @@ func (i *InterceptorBuilder) defaultUnaryServerInterceptor() grpc.UnaryServerInt
 		start := time.Now()
 		defer func() {
 			end := time.Since(start)
-			serviceName, method := i.SplitMethodName(info.FullMethod)
+			serviceName, method := b.SplitMethodName(info.FullMethod)
 			st, _ := status.FromError(err)
 			code := "OK"
 			if st != nil {
 				code = st.Code().String()
 			}
-			summary.WithLabelValues("unary", serviceName, method, i.PeerName(ctx), code).Observe(float64(end.Milliseconds()))
+			summary.WithLabelValues("unary", serviceName, method, b.PeerName(ctx), code).Observe(float64(end.Milliseconds()))
 		}()
 		return handler(ctx, req)
 	}

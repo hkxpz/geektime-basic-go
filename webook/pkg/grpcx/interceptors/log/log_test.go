@@ -28,7 +28,7 @@ func TestServerRegistration(t *testing.T) {
 
 func (l *LogTestSuite) SetupSuite() {
 	startup.InitViper()
-	l.interceptor = NewLoggerInterceptorBuilder(startup.InitZapLogger()).defaultUnaryServerInterceptor()
+	l.interceptor = NewInterceptorBuilder(startup.InitZapLogger()).defaultUnaryServerInterceptor()
 }
 
 func (l *LogTestSuite) TestServer() {

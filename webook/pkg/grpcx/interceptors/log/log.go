@@ -14,25 +14,22 @@ import (
 	"geektime-basic-go/webook/pkg/logger"
 )
 
-type LoggerInterceptorBuilder struct {
+type InterceptorBuilder struct {
 	l logger.Logger
 	interceptors.Builder
 }
 
-func NewLoggerInterceptorBuilder(l logger.Logger) *LoggerInterceptorBuilder {
-	return &LoggerInterceptorBuilder{l: l, Builder: interceptors.NewBuilder()}
+func NewInterceptorBuilder(l logger.Logger) *InterceptorBuilder {
+	return &InterceptorBuilder{l: l, Builder: interceptors.NewBuilder()}
 }
 
-func (l *LoggerInterceptorBuilder) defaultUnaryServerInterceptor() grpc.UnaryServerInterceptor {
+func (b *InterceptorBuilder) defaultUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		if info.FullMethod == "grpc.health.v1.Health/Check" {
 			return handler(ctx, req)
 		}
-
 		var start = time.Now()
-		var fields = make([]any, 0, 20)
 		var event = "normal"
-
 		defer func() {
 			cost := time.Since(start)
 			if rec := recover(); rec != nil {
@@ -47,18 +44,22 @@ func (l *LoggerInterceptorBuilder) defaultUnaryServerInterceptor() grpc.UnarySer
 				event = "recover"
 				err = status.New(codes.Internal, "panic, err"+err.Error()).Err()
 			}
+			var code = "OK"
 			st, _ := status.FromError(err)
-			fields = append(fields,
+			if st != nil {
+				code = st.Code().String()
+			}
+			b.l.Info(
+				"RPC调用",
 				logger.String("type", "unary"),
-				logger.String("code", st.Code().String()),
+				logger.String("code", code),
 				logger.String("code_msg", st.Message()),
 				logger.String("event", event),
 				logger.String("method", info.FullMethod),
 				logger.Int("cost", cost.Milliseconds()),
-				logger.String("peer", l.PeerName(ctx)),
-				logger.String("peer_ip", l.PeerIP(ctx)),
+				logger.String("peer", b.PeerName(ctx)),
+				logger.String("peer_ip", b.PeerIP(ctx)),
 			)
-			l.l.Info("RPC调用", fields...)
 		}()
 		return handler(ctx, req)
 	}
